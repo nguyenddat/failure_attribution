@@ -31,6 +31,7 @@ def step_by_step_single_file(
             "output_tokens_total": 0,
             "total_tokens_total": 0,
             "cost_usd_estimate_total": 0.0,
+            "total_retries": 0,
         }
 
     print(f"Evaluating step {current_step} out of {total_steps}...")
@@ -86,6 +87,7 @@ def step_by_step_single_file(
             break
         except Exception as e:
             last_err = e
+            metrics_acc["total_retries"] += 1
             print(
                 f"[WARN] Step {current_step} failed (attempt {attempt}/{max_retries_per_step}): {e}"
             )

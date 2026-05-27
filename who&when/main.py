@@ -104,7 +104,7 @@ def save_outputs(results: Dict[str, Any], out_dir: Path) -> None:
 
 if __name__ == "__main__":
     project_root = Path(__file__).resolve().parent
-    data_dir = project_root / "Who&When" / "Hand-Crafted"
+    data_dir = project_root / "Who&When" / "Algorithm-Generated"
     out_dir = project_root / "outputs"
     out_dir.mkdir(parents=True, exist_ok=True)
 
@@ -126,6 +126,7 @@ if __name__ == "__main__":
                 "pred step",
                 "agent-level accuracy",
                 "step-level accuracy",
+                "total retries",
                 "latency",
                 "cost (price)",
             ]
@@ -156,6 +157,7 @@ if __name__ == "__main__":
                 step_acc = 1 if pred_step == gt_step else 0
                 latency = float(metrics.get("latency_s_total", 0.0) or 0.0)
                 cost = float(metrics.get("cost_usd_estimate_total", 0.0) or 0.0)
+                total_retries = int(metrics.get("total_retries", 0) or 0)
 
                 writer.writerow(
                     [
@@ -168,6 +170,7 @@ if __name__ == "__main__":
                         pred_step,
                         agent_acc,
                         step_acc,
+                        total_retries,
                         f"{latency:.6f}",
                         f"{cost:.10f}",
                     ]
