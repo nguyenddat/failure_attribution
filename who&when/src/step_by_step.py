@@ -21,6 +21,7 @@ def step_by_step_single_file(
     current_step: int,
     total_steps: int,
     metrics_acc: Dict[str, Any] | None = None,
+    max_retries_per_step: int = 3,
 ):  
     if metrics_acc is None:
         metrics_acc = {
@@ -75,8 +76,28 @@ def step_by_step_single_file(
         "agent_name": agent_name
     }
     
-    # predict
-    response = get_chat_completion(model, method_params, prompt_params)
+    # predict (retry only this step if call/parsing fails)
+    last_err = None
+    response = None
+    for attempt in range(1, max_retries_per_step + 1):
+        try:
+            response = get_chat_completion(model, method_params, prompt_params)
+            last_err = None
+            break
+        except Exception as e:
+            last_err = e
+            print(
+                f"[WARN] Step {current_step} failed (attempt {attempt}/{max_retries_per_step}): {e}"
+            )
+
+    if response is None:
+        return {
+            "mistake_agent": None,
+            "mistake_step": None,
+            "reason": f"Step {current_step} failed after {max_retries_per_step} retries: {last_err}",
+            "metrics": metrics_acc,
+        }
+
     m = response.get("metrics", {})
     tu = m.get("token_usage", {})
     metrics_acc["num_calls"] += 1
@@ -102,6 +123,7 @@ def step_by_step_single_file(
             current_step=current_step + 1,
             total_steps=total_steps,
             metrics_acc=metrics_acc,
+            max_retries_per_step=max_retries_per_step,
         )
 
 if __name__ == "__main__":
