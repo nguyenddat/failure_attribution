@@ -1,21 +1,77 @@
-from langchain_openai import ChatOpenAI
-from langchain_core.prompts import ChatPromptTemplate
+import sys
 import time
-import re
+from pathlib import Path
+sys.path.append(str(Path(__file__).resolve().parents[2]))
 
-from ..system_prompt.step_by_step_with_gt import (
+from langchain_core.prompts import ChatPromptTemplate
+from langchain_classic.output_parsers.fix import OutputFixingParser
+
+from src.system_prompt.step_by_step_with_gt import (
     prompt as prompt_step_by_step_with_gt, 
     parser as parser_step_by_step_with_gt
-) 
-from .models import model_pricing_per_1m
+)
+from src.system_prompt.all_at_one_with_gt import (
+    prompt as prompt_all_at_one_with_gt,
+    parser as parser_all_at_one_with_gt,
+)
+from src.system_prompt.binary_search_with_gt import (
+    prompt as prompt_binary_search_with_gt,
+    parser as parser_binary_search_with_gt,
+)
+from src.system_prompt.multistep_with_gt import (
+    prompt as prompt_multistep_with_gt,
+    parser as parser_multistep_with_gt,
+)
+from src.system_prompt.multistep_coarse_with_gt import (
+    prompt as prompt_multistep_coarse_with_gt,
+    parser as parser_multistep_coarse_with_gt,
+)
+from src.system_prompt.multistep_refine_with_gt import (
+    prompt as prompt_multistep_refine_with_gt,
+    parser as parser_multistep_refine_with_gt,
+)
+from src.utils.models import get_model
+from src.utils.schema import (
+    AllAtOnceInput,
+    BinarySearchInput,
+    MultiStepCoarseInput,
+    MultiStepInput,
+    MultiStepRefineInput,
+    StepByStepInput,
+    Metadata,
+)
 
-def get_prompt(
-    method: str,
-    with_gt: bool = False,
-):
+def clean_llm_json_text(text: str) -> str:
+    return (
+        text.strip()
+        .strip()
+        .replace("\\$", "$")
+    )
+
+def get_prompt(method: str, with_gt: bool = False):
     if method == "step_by_step" and with_gt:
         prompt = prompt_step_by_step_with_gt
         parser = parser_step_by_step_with_gt
+        
+    elif method == "all_at_once" and with_gt:
+        prompt = prompt_all_at_one_with_gt
+        parser = parser_all_at_one_with_gt
+    
+    elif method == "binary_search" and with_gt:
+        prompt = prompt_binary_search_with_gt
+        parser = parser_binary_search_with_gt
+
+    elif method == "multistep" and with_gt:
+        prompt = prompt_multistep_with_gt
+        parser = parser_multistep_with_gt
+
+    elif method == "multistep_coarse" and with_gt:
+        prompt = prompt_multistep_coarse_with_gt
+        parser = parser_multistep_coarse_with_gt
+
+    elif method == "multistep_refine" and with_gt:
+        prompt = prompt_multistep_refine_with_gt
+        parser = parser_multistep_refine_with_gt
     
     else:
         raise ValueError(f"Unsupported method '{method}' with_gt={with_gt}. Please choose a valid combination.")
@@ -27,68 +83,29 @@ def get_prompt(
     ).partial(format_instructions=parser.get_format_instructions())
     return system_messages, parser
 
+
 def get_chat_completion(
-    model: ChatOpenAI,
-    method_params: dict,
-    prompt_params: dict,
+    metadata: Metadata,
+    prompt_params: AllAtOnceInput | BinarySearchInput | MultiStepCoarseInput | MultiStepInput | MultiStepRefineInput | StepByStepInput,
 ):
-    # Get prompt + parser
-    method = method_params.get("method")
-    with_gt = method_params.get("with_gt", False)
+    model = get_model(metadata.model_name)    
+    method = metadata.method
+    with_gt = metadata.with_gt
     system_messages, parser = get_prompt(method=method, with_gt=with_gt)
     
-    # Invoke raw model first so we can capture latency + usage metadata
-    prompt_value = system_messages.invoke(prompt_params)
+    # Latency metric
+    prompt_value = system_messages.invoke(prompt_params.model_dump())
+        
     t0 = time.perf_counter()
-    ai_msg = model.invoke(prompt_value)
-    latency_s = time.perf_counter() - t0
+    ai_msg = ai_msg = model.invoke(prompt_value)
+    latency = time.perf_counter() - t0
 
-    raw_text = (ai_msg.content or "").strip()
-    parsed = None
-    parse_mode = "pydantic_json"
-    try:
-        parsed = parser.invoke(ai_msg).dict()
-    except Exception:
-        # Fallback: robust text parse for "1. Yes/No" + "Reason:"
-        parse_mode = "text_fallback"
-        txt = raw_text.lower()
-        first_line = raw_text.splitlines()[0].strip().lower() if raw_text else ""
-        error_found = (
-            first_line.startswith("1. yes")
-            or first_line.startswith("yes")
-            or bool(re.search(r"\b1\.\s*yes\b", txt))
-            or (("yes" in txt) and ("no" not in txt[:40]))
-        )
-        reason = raw_text
-        m = re.search(r"reason\s*:\s*(.*)", raw_text, flags=re.IGNORECASE | re.DOTALL)
-        if m:
-            reason = m.group(1).strip()
-        parsed = {
-            "error_found": bool(error_found),
-            "reason": reason if reason else "Parser fallback: empty model response.",
-        }
-    usage = ai_msg.response_metadata.get("token_usage", {}) if ai_msg.response_metadata else {}
-    input_tokens = usage.get("prompt_tokens", 0) or 0
-    output_tokens = usage.get("completion_tokens", 0) or 0
-    total_tokens = usage.get("total_tokens", input_tokens + output_tokens)
+    # Token metric
+    cost_metrics = {}
+    cost_metrics["input_tokens"] = ai_msg.usage_metadata["input_tokens"]
+    cost_metrics["output_tokens"] = ai_msg.usage_metadata["output_tokens"]
+    cost_metrics["latency"] = latency
 
-    alias = method_params.get("model_name")
-    pricing = model_pricing_per_1m.get(alias, {})
-    input_price = pricing.get("input")
-    output_price = pricing.get("output")
-    cost_usd_estimate = None
-    if input_price is not None and output_price is not None:
-        cost_usd_estimate = (input_tokens / 1_000_000) * input_price + (output_tokens / 1_000_000) * output_price
-
-    parsed["metrics"] = {
-        "latency_s": latency_s,
-        "parse_mode": parse_mode,
-        "raw_response": raw_text,
-        "token_usage": {
-            "input_tokens": input_tokens,
-            "output_tokens": output_tokens,
-            "total_tokens": total_tokens,
-        },
-        "cost_usd_estimate": cost_usd_estimate,
-    }
-    return parsed
+    parser = OutputFixingParser.from_llm(parser=parser, llm=model)
+    result = parser.invoke(ai_msg).model_dump()
+    return result, cost_metrics

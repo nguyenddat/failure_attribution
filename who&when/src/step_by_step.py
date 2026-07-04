@@ -3,158 +3,111 @@ import sys
 import json
 from pathlib import Path
 from typing import Any, Dict
+from tqdm import tqdm
 
-try:
-    from .utils.models import get_model
-    from .utils.file import load_json
-    from .utils.get_chat_completion import get_chat_completion
-except ImportError:
-    # Allow direct script execution: python src/step_by_step.py
-    sys.path.append(str(Path(__file__).resolve().parents[1]))
-    from src.utils.models import get_model
-    from src.utils.file import load_json
-    from src.utils.get_chat_completion import get_chat_completion
+sys.path.append(str(Path(__file__).resolve().parents[1]))
+from src.utils.file import load_json
+from src.utils.get_chat_completion import get_chat_completion
+from src.utils.schema import Metadata, AccuracyMetrics, CostMetrics, \
+    StepByStepInput
 
 def step_by_step_single_file(
-    model_name: str,
-    data: Dict[str, Any],
+    data: dict,
     current_step: int,
     total_steps: int,
-    metrics_acc: Dict[str, Any] | None = None,
-    max_retries_per_step: int = 3,
+    metadata: Metadata,
+    accuracy_metrics: AccuracyMetrics | None = None,
+    cost_metrics: CostMetrics | None = None,
+    progress_bar: tqdm | None = None,
 ):  
-    if metrics_acc is None:
-        metrics_acc = {
-            "num_calls": 0,
-            "latency_s_total": 0.0,
-            "input_tokens_total": 0,
-            "output_tokens_total": 0,
-            "total_tokens_total": 0,
-            "cost_usd_estimate_total": 0.0,
-            "total_retries": 0,
-        }
-
-    print(f"Evaluating step {current_step} out of {total_steps}...")
-    if current_step >= total_steps:
-        return {
-            "mistake_agent": None,
-            "mistake_step": None,
-            "reason": "No mistake found in any step.",
-            "metrics": metrics_acc,
-        }
-        
-    # load data + model
-    model = get_model(model_name)
-    method_params = {
-        "method": "step_by_step",
-        "with_gt": True,
-        "model_name": model_name,
-    }
+    if not cost_metrics:
+        cost_metrics = CostMetrics(
+            num_input_steps=0,
+            latency=0.0,
+            input_tokens=0,
+            output_tokens=0,
+            input_cost=0.0,
+            output_cost=0.0,
+            total_cost=0.0,
+        )
     
-    # prepare prompt params
-    problem = data["question"]
-    problem_gt = data["ground_truth"]
-    chat_history = data["history"]
-    if total_steps != len(chat_history):
-        total_steps = len(chat_history)
-    if current_step < 0 or current_step >= total_steps:
-        raise ValueError(f"current_step should be between 0 and {total_steps - 1}")
+    if not accuracy_metrics:
+        accuracy_metrics = AccuracyMetrics(
+            gt_agent=data.get("mistake_agent", None),
+            gt_step=data.get("mistake_step", None),
+            pred_agent="Not Found",
+            pred_step=-1,
+            agent_accuracy=0,
+            step_accuracy=0
+        )
+    
+    if progress_bar is not None:
+        progress_bar.set_description(f"step_by_step step {current_step + 1}/{total_steps}")
 
-    current_rows = []
+    if current_step >= total_steps:
+        accuracy_metrics.pred_agent = "Not Found"
+        accuracy_metrics.pred_step = -1
+        accuracy_metrics.step_accuracy = 0
+        accuracy_metrics.agent_accuracy = 0
+        return accuracy_metrics, cost_metrics
+    
+    conversation_history = []
     for i in range(current_step + 1):
-        entry = chat_history[i]
+        entry = data["history"][i]
         agent = entry.get("name", "Unknown Agent")
         content = entry.get("content", "")
-        current_rows.append(f"Step {i} - {agent}: {content}")
-    current_conversation_history = "\n".join(current_rows)
-    agent_name = chat_history[current_step].get("name", "Unknown Agent")
+        conversation_history.append(f"{agent}: {content}")
+    current_conversation_history = "\n".join(conversation_history)
+    agent_name = data["history"][current_step].get("name", "Unknown Agent")
+            
+    method_input = StepByStepInput(
+        problem=data["question"],
+        ground_truth=data["ground_truth"],
+        current_conversation_history=current_conversation_history,
+        idx=current_step,
+        agent_name=agent_name
+    )
     
-    prompt_params = {
-        "problem": problem,
-        "ground_truth": problem_gt,
-        "current_conversation_history": current_conversation_history,
-        "idx": current_step,
-        "agent_name": agent_name
-    }
+    # Predict
+    result, metrics = get_chat_completion(metadata, method_input)
     
-    # predict (retry only this step if call/parsing fails)
-    last_err = None
-    response = None
-    for attempt in range(1, max_retries_per_step + 1):
-        try:
-            response = get_chat_completion(model, method_params, prompt_params)
-            last_err = None
-            break
-        except Exception as e:
-            last_err = e
-            metrics_acc["total_retries"] += 1
-            print(
-                f"[WARN] Step {current_step} failed (attempt {attempt}/{max_retries_per_step}): {e}"
-            )
+    cost_metrics.latency += metrics["latency"]
+    cost_metrics.input_tokens += metrics["input_tokens"]
+    cost_metrics.output_tokens += metrics["output_tokens"]
+    cost_metrics.num_input_steps += len(conversation_history)
+    if result["error_found"]:
+        accuracy_metrics.pred_agent = agent_name
+        accuracy_metrics.pred_step = current_step
+        accuracy_metrics.step_accuracy = accuracy_metrics.gt_step == current_step
+        accuracy_metrics.agent_accuracy = accuracy_metrics.gt_agent == agent_name
+        return accuracy_metrics, cost_metrics
+    
+    return step_by_step_single_file(
+        data=data,
+        current_step=current_step + 1,
+        total_steps=total_steps,
+        metadata=metadata,
+        accuracy_metrics=accuracy_metrics,
+        cost_metrics=cost_metrics,
+        progress_bar=progress_bar
+    )
 
-    if response is None:
-        return {
-            "mistake_agent": None,
-            "mistake_step": None,
-            "reason": f"Step {current_step} failed after {max_retries_per_step} retries: {last_err}",
-            "metrics": metrics_acc,
-        }
-
-    m = response.get("metrics", {})
-    tu = m.get("token_usage", {})
-    metrics_acc["num_calls"] += 1
-    metrics_acc["latency_s_total"] += m.get("latency_s", 0.0) or 0.0
-    metrics_acc["input_tokens_total"] += tu.get("input_tokens", 0) or 0
-    metrics_acc["output_tokens_total"] += tu.get("output_tokens", 0) or 0
-    metrics_acc["total_tokens_total"] += tu.get("total_tokens", 0) or 0
-    metrics_acc["cost_usd_estimate_total"] += m.get("cost_usd_estimate", 0.0) or 0.0
-
-    error_found = response["error_found"]
-    reason = response["reason"]
-    if error_found:
-        return {
-            "mistake_agent": agent_name,
-            "mistake_step": current_step,
-            "reason": reason,
-            "metrics": metrics_acc,
-        }
-    else:
-        return step_by_step_single_file(
-            model_name=model_name,
-            data=data,
-            current_step=current_step + 1,
-            total_steps=total_steps,
-            metrics_acc=metrics_acc,
-            max_retries_per_step=max_retries_per_step,
-        )
 
 if __name__ == "__main__":
-    # Example usage
-    model_name = "gpt-4o-mini"
-    
-    file_path = os.path.join(os.getcwd(), "Who&When\\Algorithm-Generated\\1.json")
+    project_root = Path(__file__).resolve().parents[1]
+    file_path = project_root / "Who&When" / "Algorithm-Generated" / "1.json"
     data = load_json(file_path)
     total_steps = len(data["history"])
 
-    # Predict 
-    result = step_by_step_single_file(model_name, data, current_step=0, total_steps=total_steps)
-    
-    # Eval
-    gt_mistake_agent = data.get("mistake_agent", None)
-    gt_mistake_step = int(data.get("mistake_step", None)) if data.get("mistake_step", None) is not None else None
-    print(f"Predicted mistake agent: {result['mistake_agent']}, step: {result['mistake_step']}")
-    print(f"Ground truth mistake agent: {gt_mistake_agent}, step: {gt_mistake_step}")
-    print(f"Reason: {result['reason']}")
-        
-    print(f"\t--> Agent level: {'Correct' if (result['mistake_agent'] == gt_mistake_agent) else 'Incorrect'}")
-    print(f"\t--> Step level: {'Correct' if (result['mistake_step'] == gt_mistake_step) else 'Incorrect'}")
-
-    # Print metrics
-    metrics = result["metrics"]
-    print("\nMetrics:")
-    print(f"\tNumber of calls: {metrics['num_calls']}")
-    print(f"\tTotal latency (s): {metrics['latency_s_total']:.2f}")
-    print(f"\tTotal input tokens: {metrics['input_tokens_total']}")
-    print(f"\tTotal output tokens: {metrics['output_tokens_total']}")
-    print(f"\tTotal tokens: {metrics['total_tokens_total']}")
-    print(f"\tTotal cost estimate (USD): ${metrics['cost_usd_estimate_total']:.4f}")
+    # Predict
+    metadata = Metadata(model_name="gpt-4o-mini", method="step_by_step", with_gt=True)
+    accuracy_metrics, cost_metrics = step_by_step_single_file(data, current_step=0, total_steps=total_steps, metadata=metadata)
+    print(f"Predicted mistake agent: {accuracy_metrics.pred_agent}, step: {accuracy_metrics.pred_step}")
+    print((
+        f"Cost:\n",
+        f"\tLatency: {cost_metrics.latency}s\n",
+        f"\tInput tokens: {cost_metrics.input_tokens}\n",
+        f"\tOutput tokens: {cost_metrics.output_tokens}\n"
+        f"\nNumber of input steps: {cost_metrics.num_input_steps}"
+    )
+    )

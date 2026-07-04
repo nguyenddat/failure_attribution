@@ -1,0 +1,72 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="980" height="620">
+<rect width="100%" height="100%" fill="white" />
+<text x="490.00" y="28.00" font-size="20" text-anchor="middle" font-family="Arial">Ground-truth vs predicted step distribution</text>
+<line x1="80" y1="550.00" x2="950" y2="550.00" stroke="#eeeeee" />
+<text x="70.00" y="554.00" font-size="12" text-anchor="end" font-family="Arial">0</text>
+<line x1="80" y1="466.67" x2="950" y2="466.67" stroke="#eeeeee" />
+<text x="70.00" y="470.67" font-size="12" text-anchor="end" font-family="Arial">10</text>
+<line x1="80" y1="383.33" x2="950" y2="383.33" stroke="#eeeeee" />
+<text x="70.00" y="387.33" font-size="12" text-anchor="end" font-family="Arial">19</text>
+<line x1="80" y1="300.00" x2="950" y2="300.00" stroke="#eeeeee" />
+<text x="70.00" y="304.00" font-size="12" text-anchor="end" font-family="Arial">28</text>
+<line x1="80" y1="216.67" x2="950" y2="216.67" stroke="#eeeeee" />
+<text x="70.00" y="220.67" font-size="12" text-anchor="end" font-family="Arial">38</text>
+<line x1="80" y1="133.33" x2="950" y2="133.33" stroke="#eeeeee" />
+<text x="70.00" y="137.33" font-size="12" text-anchor="end" font-family="Arial">48</text>
+<line x1="80" y1="50.00" x2="950" y2="50.00" stroke="#eeeeee" />
+<text x="70.00" y="54.00" font-size="12" text-anchor="end" font-family="Arial">57</text>
+<line x1="80.00" y1="50" x2="80.00" y2="550" stroke="#f5f5f5" />
+<text x="80.00" y="570.00" font-size="12" text-anchor="middle" font-family="Arial">-1</text>
+<line x1="167.00" y1="50" x2="167.00" y2="550" stroke="#f5f5f5" />
+<text x="167.00" y="570.00" font-size="12" text-anchor="middle" font-family="Arial">0</text>
+<line x1="254.00" y1="50" x2="254.00" y2="550" stroke="#f5f5f5" />
+<text x="254.00" y="570.00" font-size="12" text-anchor="middle" font-family="Arial">1</text>
+<line x1="341.00" y1="50" x2="341.00" y2="550" stroke="#f5f5f5" />
+<text x="341.00" y="570.00" font-size="12" text-anchor="middle" font-family="Arial">2</text>
+<line x1="428.00" y1="50" x2="428.00" y2="550" stroke="#f5f5f5" />
+<text x="428.00" y="570.00" font-size="12" text-anchor="middle" font-family="Arial">3</text>
+<line x1="515.00" y1="50" x2="515.00" y2="550" stroke="#f5f5f5" />
+<text x="515.00" y="570.00" font-size="12" text-anchor="middle" font-family="Arial">4</text>
+<line x1="602.00" y1="50" x2="602.00" y2="550" stroke="#f5f5f5" />
+<text x="602.00" y="570.00" font-size="12" text-anchor="middle" font-family="Arial">5</text>
+<line x1="689.00" y1="50" x2="689.00" y2="550" stroke="#f5f5f5" />
+<text x="689.00" y="570.00" font-size="12" text-anchor="middle" font-family="Arial">6</text>
+<line x1="776.00" y1="50" x2="776.00" y2="550" stroke="#f5f5f5" />
+<text x="776.00" y="570.00" font-size="12" text-anchor="middle" font-family="Arial">7</text>
+<line x1="863.00" y1="50" x2="863.00" y2="550" stroke="#f5f5f5" />
+<text x="863.00" y="570.00" font-size="12" text-anchor="middle" font-family="Arial">8</text>
+<line x1="950.00" y1="50" x2="950.00" y2="550" stroke="#f5f5f5" />
+<text x="950.00" y="570.00" font-size="12" text-anchor="middle" font-family="Arial">9</text>
+<line x1="80" y1="50" x2="80" y2="550" stroke="black" />
+<line x1="80" y1="550" x2="950" y2="550" stroke="black" />
+<text x="490.00" y="602.00" font-size="14" text-anchor="middle" font-family="Arial">Step index</text>
+<text x="28.00" y="300.00" font-size="14" text-anchor="start" font-family="Arial">Count</text>
+<polyline fill="none" stroke="red" stroke-width="3" points="80.00,550.00 167.00,374.56 254.00,251.75 341.00,453.51 428.00,435.96 515.00,453.51 602.00,427.19 689.00,497.37 776.00,514.91 863.00,444.74 950.00,541.23" />
+<polyline fill="none" stroke="goldenrod" stroke-width="3" points="80.00,541.23 167.00,50.00 254.00,304.39 341.00,348.25 428.00,471.05 515.00,506.14 602.00,532.46 689.00,541.23 776.00,550.00 863.00,550.00 950.00,550.00" />
+<circle cx="80.00" cy="550.00" r="4" fill="red" stroke="none" stroke-width="1" />
+<circle cx="80.00" cy="541.23" r="4" fill="gold" stroke="black" stroke-width="1" />
+<circle cx="167.00" cy="374.56" r="4" fill="red" stroke="none" stroke-width="1" />
+<circle cx="167.00" cy="50.00" r="4" fill="gold" stroke="black" stroke-width="1" />
+<circle cx="254.00" cy="251.75" r="4" fill="red" stroke="none" stroke-width="1" />
+<circle cx="254.00" cy="304.39" r="4" fill="gold" stroke="black" stroke-width="1" />
+<circle cx="341.00" cy="453.51" r="4" fill="red" stroke="none" stroke-width="1" />
+<circle cx="341.00" cy="348.25" r="4" fill="gold" stroke="black" stroke-width="1" />
+<circle cx="428.00" cy="435.96" r="4" fill="red" stroke="none" stroke-width="1" />
+<circle cx="428.00" cy="471.05" r="4" fill="gold" stroke="black" stroke-width="1" />
+<circle cx="515.00" cy="453.51" r="4" fill="red" stroke="none" stroke-width="1" />
+<circle cx="515.00" cy="506.14" r="4" fill="gold" stroke="black" stroke-width="1" />
+<circle cx="602.00" cy="427.19" r="4" fill="red" stroke="none" stroke-width="1" />
+<circle cx="602.00" cy="532.46" r="4" fill="gold" stroke="black" stroke-width="1" />
+<circle cx="689.00" cy="497.37" r="4" fill="red" stroke="none" stroke-width="1" />
+<circle cx="689.00" cy="541.23" r="4" fill="gold" stroke="black" stroke-width="1" />
+<circle cx="776.00" cy="514.91" r="4" fill="red" stroke="none" stroke-width="1" />
+<circle cx="776.00" cy="550.00" r="4" fill="gold" stroke="black" stroke-width="1" />
+<circle cx="863.00" cy="444.74" r="4" fill="red" stroke="none" stroke-width="1" />
+<circle cx="863.00" cy="550.00" r="4" fill="gold" stroke="black" stroke-width="1" />
+<circle cx="950.00" cy="541.23" r="4" fill="red" stroke="none" stroke-width="1" />
+<circle cx="950.00" cy="550.00" r="4" fill="gold" stroke="black" stroke-width="1" />
+<line x1="740" y1="70" x2="760" y2="70" stroke="red" stroke-width="3" />
+<text x="768.00" y="74.00" font-size="12" text-anchor="start" font-family="Arial">Ground-truth step</text>
+<line x1="740" y1="94" x2="760" y2="94" stroke="goldenrod" stroke-width="3" />
+<text x="768.00" y="98.00" font-size="12" text-anchor="start" font-family="Arial">Predicted step</text>
+</svg>
