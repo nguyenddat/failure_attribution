@@ -5,16 +5,15 @@ from pathlib import Path
 
 import pandas as pd
 
-if __package__ is None or __package__ == "":
-    import sys
+from single_fault.utils.datasets import DATASET_DIRS
+from single_fault.utils.experiment_paths import (
+    baseline_accuracy_path,
+    step_based_accuracy_path,
+    STEP_BASED_LENGTH_ANALYSIS_DIR,
+)
 
-    sys.path.append(str(Path(__file__).resolve().parents[1]))
-    from single_fault.utils.datasets import DATASET_DIRS, OUTPUT_DIR
-else:
-    from .utils.datasets import DATASET_DIRS, OUTPUT_DIR
 
-
-LENGTH_ANALYSIS_DIR = OUTPUT_DIR / "length_analysis"
+LENGTH_ANALYSIS_DIR = STEP_BASED_LENGTH_ANALYSIS_DIR
 BASE_COLUMNS = ["file", "gt_agent", "gt_step"]
 METHOD_PAIRS = [
     ("all_at_once_agent_acc", "step_based_multi_step_w5_agent_acc", "agent"),
@@ -26,8 +25,8 @@ MIN_GROUP_SIZE = 5
 
 
 def load_dataset_results(dataset_key: str) -> pd.DataFrame:
-    baseline_path = OUTPUT_DIR / f"{dataset_key}.csv"
-    step_based_path = OUTPUT_DIR / f"{dataset_key}_step_based_multi_step.csv"
+    baseline_path = baseline_accuracy_path(dataset_key)
+    step_based_path = step_based_accuracy_path(dataset_key)
 
     baseline_df = pd.read_csv(baseline_path)
     step_based_df = pd.read_csv(step_based_path)

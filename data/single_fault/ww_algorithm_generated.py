@@ -4,8 +4,8 @@ from pathlib import Path
 from typing import Any, List
 
 import pandas as pd
-from utils import AgentBehavior, Data
-from utils import dataset_name_to_filename
+
+from data.single_fault.utils import AgentBehavior, Data, dataset_name_to_filename
 
 base_dir = Path(__file__).resolve().parent
 
@@ -20,10 +20,6 @@ selected_fields = problem_fields + trajectory_fields
 
 output_dir = Path(__file__).resolve().parent / "json"
 
-# load dataframe
-df = pd.read_parquet(dataset_link)
-df = df[selected_fields]
-
 def history_to_trajectory(history: Any) -> List[AgentBehavior]:
     trajectory = []
     for i, item in enumerate(history):
@@ -34,7 +30,14 @@ def history_to_trajectory(history: Any) -> List[AgentBehavior]:
         ))
     return trajectory
 
+
+def load_dataframe() -> pd.DataFrame:
+    df = pd.read_parquet(dataset_link)
+    return df[selected_fields]
+
 def load_data_path() -> Path:
+    df = load_dataframe()
+
     for i, row in df.iterrows():
         file_path = dataset_path / f"{i}.json"
         if os.path.exists(file_path):
@@ -51,4 +54,5 @@ def load_data_path() -> Path:
             json.dump(data.model_dump(), file)
     return dataset_path
 
-load_data_path()
+if __name__ == "__main__":
+    load_data_path()

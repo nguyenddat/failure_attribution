@@ -6,16 +6,15 @@ from pathlib import Path
 import matplotlib.pyplot as plt
 import pandas as pd
 
-if __package__ is None or __package__ == "":
-    import sys
+from single_fault.utils.datasets import DATASET_DIRS
+from single_fault.utils.experiment_paths import (
+    baseline_cost_path,
+    step_based_cost_path,
+    STEP_BASED_LENGTH_ANALYSIS_DIR,
+)
 
-    sys.path.append(str(Path(__file__).resolve().parents[1]))
-    from single_fault.utils.datasets import DATASET_DIRS, OUTPUT_DIR
-else:
-    from .utils.datasets import DATASET_DIRS, OUTPUT_DIR
 
-
-LENGTH_PLOT_DIR = OUTPUT_DIR / "length_analysis"
+LENGTH_PLOT_DIR = STEP_BASED_LENGTH_ANALYSIS_DIR
 BASE_COLUMNS = ["file", "gt_agent", "gt_step"]
 METHODS = [
     ("all_at_once", "All at once", "#6c757d"),
@@ -27,8 +26,8 @@ COMMON_BUCKET_LABELS = ["<10", "10-19", "20-39", "40-59", "60+"]
 
 
 def load_dataset_costs(dataset_key: str) -> pd.DataFrame:
-    baseline_path = OUTPUT_DIR / f"{dataset_key}_cost.csv"
-    step_based_path = OUTPUT_DIR / f"{dataset_key}_step_based_multi_step_cost.csv"
+    baseline_path = baseline_cost_path(dataset_key)
+    step_based_path = step_based_cost_path(dataset_key)
 
     baseline_df = pd.read_csv(baseline_path)
     step_based_df = pd.read_csv(step_based_path)

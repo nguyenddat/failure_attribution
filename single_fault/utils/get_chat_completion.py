@@ -1,7 +1,4 @@
-import sys
 import time
-from pathlib import Path
-sys.path.append(str(Path(__file__).resolve().parents[2]))
 
 from langchain_core.prompts import ChatPromptTemplate
 from langchain_classic.output_parsers.fix import OutputFixingParser
@@ -52,18 +49,16 @@ def get_chat_completion(
     metadata: Metadata,
     prompt_params: AllAtOnceInput | StepByStepInput,
 ):
-    model = get_model(metadata.model_name)    
+    model = get_model(metadata.model_name)
     method = metadata.method
     system_messages, parser = get_prompt(method=method)
-    
-    # Latency metric
+
     prompt_value = system_messages.invoke(prompt_params.model_dump())
-        
+
     t0 = time.perf_counter()
-    ai_msg = ai_msg = model.invoke(prompt_value)
+    ai_msg = model.invoke(prompt_value)
     latency = time.perf_counter() - t0
 
-    # Token metric
     cost_metrics = {}
     cost_metrics["input_tokens"] = ai_msg.usage_metadata["input_tokens"]
     cost_metrics["output_tokens"] = ai_msg.usage_metadata["output_tokens"]

@@ -39,6 +39,8 @@ NGUYÊN TẮC LÀM VIỆC:
    - Không thêm comment dài dòng; chỉ thêm comment ngắn khi logic khó đọc.
 
 5. Chạy lệnh và kiểm chứng.
+   - Trước mọi lệnh dùng Python hoặc pytest, phải chạy `conda activate segment` để dùng đúng Python runtime.
+   - Nếu thiếu thư viện Python, cài trong môi trường đã activate bằng `pip install <package>`, sau đó cập nhật `requirements.txt` bằng `pip freeze > requirements.txt`.
    - Dùng `uv run python <script>` cho script Python trong repo.
    - Khi phù hợp, chạy `uv run pytest -q`.
    - Nếu thay đổi ảnh hưởng đến script phân tích hoặc evaluation, chạy đúng script liên quan nếu chi phí hợp lý.

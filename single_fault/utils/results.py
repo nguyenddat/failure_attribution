@@ -12,6 +12,10 @@ def build_result_columns(method_name: str) -> tuple[str, str]:
     return f"{method_name}_agent_acc", f"{method_name}_step_acc"
 
 
+def build_prediction_columns(method_name: str) -> tuple[str, str]:
+    return f"{method_name}_pred_agent", f"{method_name}_pred_step"
+
+
 def build_cost_columns(method_name: str) -> tuple[str, str, str]:
     return (
         f"{method_name}_latency",
@@ -64,6 +68,25 @@ def update_method_result(
     row_mask = df["file"] == file_name
     df.loc[row_mask, agent_acc_col] = agent_accuracy
     df.loc[row_mask, step_acc_col] = step_accuracy
+    return df
+
+
+def update_method_prediction(
+    df: pd.DataFrame,
+    file_name: str,
+    method_name: str,
+    pred_agent: str,
+    pred_step: int,
+) -> pd.DataFrame:
+    pred_agent_col, pred_step_col = build_prediction_columns(method_name)
+    if pred_agent_col not in df.columns:
+        df[pred_agent_col] = pd.Series(dtype="object")
+    if pred_step_col not in df.columns:
+        df[pred_step_col] = pd.Series(dtype="float")
+
+    row_mask = df["file"] == file_name
+    df.loc[row_mask, pred_agent_col] = pred_agent
+    df.loc[row_mask, pred_step_col] = pred_step
     return df
 
 

@@ -4,17 +4,19 @@ import re
 from pathlib import Path
 from typing import Any
 
-if __package__ is None or __package__ == "":
-    import sys
+from single_fault.utils.datasets import DATASET_DIRS
+from single_fault.utils.experiment_paths import (
+    BASELINE_OUTPUT_DIR,
+    STEP_BASED_SEGMENTATION_OUTPUT_DIR,
+    TOKEN_BASED_SEGMENTATION_OUTPUT_DIR,
+    baseline_accuracy_path,
+    step_based_accuracy_path,
+    token_based_accuracy_path,
+    TOKEN_BASED_EVALUATION_DIR,
+)
 
-    sys.path.append(str(Path(__file__).resolve().parents[1]))
-    from single_fault.utils.datasets import DATASET_DIRS, OUTPUT_DIR
-else:
-    from .utils.datasets import DATASET_DIRS, OUTPUT_DIR
 
-
-SEGMENTATION_OUTPUT_DIR = OUTPUT_DIR / "segmentation"
-EVAL_OUTPUT_DIR = SEGMENTATION_OUTPUT_DIR / "evaluation"
+EVAL_OUTPUT_DIR = TOKEN_BASED_EVALUATION_DIR
 BASELINE_METHODS = ["all_at_once", "step_by_step"]
 BASE_COLUMNS = {"file", "gt_agent", "gt_step"}
 BASELINE_STYLES = {
@@ -41,24 +43,33 @@ def load_dataset_frames(dataset_key: str) -> list[pd.DataFrame]:
 
     frames: list[pd.DataFrame] = []
 
-    baseline_path = OUTPUT_DIR / f"{dataset_key}.csv"
+    baseline_path = baseline_accuracy_path(dataset_key)
     if baseline_path.exists():
         frames.append(pd.read_csv(baseline_path))
 
-    step_based_path = OUTPUT_DIR / f"{dataset_key}_step_based_multi_step.csv"
+    step_based_path = step_based_accuracy_path(dataset_key)
     if step_based_path.exists():
         frames.append(pd.read_csv(step_based_path))
 
-    token_based_path = OUTPUT_DIR / f"{dataset_key}_token_based_multi_step.csv"
+    token_based_path = token_based_accuracy_path(dataset_key)
     if token_based_path.exists():
         frames.append(pd.read_csv(token_based_path))
 
-    segmentation_paths = sorted(
-        path
-        for path in SEGMENTATION_OUTPUT_DIR.glob(f"{dataset_key}_*.csv")
-        if not path.name.endswith("_cost.csv")
-    )
-    for path in segmentation_paths:
+    experiment_output_dirs = [
+        BASELINE_OUTPUT_DIR,
+        STEP_BASED_SEGMENTATION_OUTPUT_DIR,
+        TOKEN_BASED_SEGMENTATION_OUTPUT_DIR,
+    ]
+    known_paths = {baseline_path, step_based_path, token_based_path}
+    extra_paths: list[Path] = []
+    for output_dir in experiment_output_dirs:
+        extra_paths.extend(
+            path
+            for path in sorted(output_dir.glob(f"{dataset_key}*.csv"))
+            if not path.name.endswith("_cost.csv") and path not in known_paths
+        )
+
+    for path in extra_paths:
         frames.append(pd.read_csv(path))
 
     if not frames:

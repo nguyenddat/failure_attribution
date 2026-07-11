@@ -7,18 +7,13 @@ from typing import Any, List, Optional
 import pandas as pd
 from datasets import load_dataset
 
-from utils import AgentBehavior, FaultyAgent, Data
-from utils import dataset_name_to_filename
+from data.multi_fault.utils import AgentBehavior, Data, FaultyAgent, dataset_name_to_filename
 
 base_dir = Path(__file__).resolve().parent
 
 dataset_name = "patronusai/trace-dataset"
 dataset_path = base_dir / "json" / dataset_name_to_filename(dataset_name).replace(".json", "")
 dataset_path.mkdir(parents=True, exist_ok=True)
-
-
-ds = load_dataset("PatronusAI/trace-dataset")
-df = ds["train"].to_pandas()
 
 def conversation_to_trajectory(conversation: Any):
     segments = []
@@ -75,7 +70,14 @@ def label_to_gt(label):
     faulty_agents = [FaultyAgent(step=step) for step in steps]
     return faulty_agents
 
+
+def load_dataframe() -> pd.DataFrame:
+    ds = load_dataset("PatronusAI/trace-dataset")
+    return ds["train"].to_pandas()
+
 def load_data_path() -> Path:
+    df = load_dataframe()
+
     for i, row in df.iterrows():
         file_path = dataset_path / f"{i}.json"
         if os.path.exists(file_path):
@@ -90,4 +92,5 @@ def load_data_path() -> Path:
 
     return dataset_path
 
-load_data_path()
+if __name__ == "__main__":
+    load_data_path()

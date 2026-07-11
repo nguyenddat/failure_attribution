@@ -1,13 +1,14 @@
 from __future__ import annotations
 
 import json
-from collections import Counter, defaultdict
+from collections import Counter
 from pathlib import Path
 
+from single_fault.utils.experiment_paths import DATASET_ANALYSIS_OUTPUT_DIR
 
-PROJECT_ROOT = Path(__file__).resolve().parents[1]
+PROJECT_ROOT = Path(__file__).resolve().parents[3]
 DATA_DIR = PROJECT_ROOT / "data" / "single_fault" / "json"
-OUTPUT_DIR = PROJECT_ROOT / "single_fault" / "data"
+OUTPUT_DIR = DATASET_ANALYSIS_OUTPUT_DIR
 OUTPUT_PATH = OUTPUT_DIR / "trajectory_length_scatter.png"
 
 DATASET_DIRS = {

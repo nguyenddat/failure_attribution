@@ -27,6 +27,11 @@
 
 Agentic failure attribution is the process of identifying errors that occur in agentic systems and is fundamental to building reliable agentic systems. As these systems grow in complexity, accurate failure attribution becomes increasingly important for enabling targeted improvements and maintaining overall system reliability.
 
+## Runtime Note
+
+Before running project scripts or tests locally, activate the Conda environment with `conda activate segment` so Python commands use the expected runtime.
+If a required library is missing, install it after activation with `pip install <package>`, then update `requirements.txt` using `pip freeze > requirements.txt`.
+
 This collection focuses on research that directly addresses:
 - **Automated Failure Attribution**: Methods for identifying failures from agentic trajectories.
 - **Failure Taxonomies**: Systematic classification of agent failure modes.
@@ -122,3 +127,20 @@ Contributions are welcome. Please submit a Pull Request with papers related to a
 <p align="center"><a href="https://github.com/ag2ai/Agents_Failure_Attribution">
   <img src="https://contributors-img.web.app/image?repo=ag2ai/Agents_Failure_Attribution" />
 </a></p>
+# Codex Launcher
+
+De vao dung project nay ma khong phai spawn `coding_agent` bang tay moi lan, dung launcher:
+
+```bash
+./bin/codex-coding-agent
+```
+
+Hanh vi:
+- Neu project nay da co session Codex gan nhat, launcher se `resume --last` trong dung repo.
+- Neu chua co session, launcher mo session moi va gui prompt khoi tao de root agent tu spawn `coding_agent`.
+
+Neu muon tao alias shell:
+
+```bash
+alias wwcodex='/mnt/d/code/ai/MAS/who&when/bin/codex-coding-agent'
+```

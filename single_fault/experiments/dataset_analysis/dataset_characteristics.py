@@ -8,10 +8,11 @@ from pathlib import Path
 from statistics import mean, median
 from typing import Callable
 
+from single_fault.utils.experiment_paths import DATASET_ANALYSIS_OUTPUT_DIR
 
-PROJECT_ROOT = Path(__file__).resolve().parents[1]
+PROJECT_ROOT = Path(__file__).resolve().parents[3]
 DATA_DIR = PROJECT_ROOT / "data" / "single_fault" / "json"
-OUTPUT_DIR = PROJECT_ROOT / "single_fault" / "data"
+OUTPUT_DIR = DATASET_ANALYSIS_OUTPUT_DIR
 
 DATASET_DIRS = {
     "Algorithm-Generated": DATA_DIR / "who_and_when__algorithm-generated",

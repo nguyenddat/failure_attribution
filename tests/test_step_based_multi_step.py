@@ -1,5 +1,5 @@
-from single_fault.evaluate_segmentation import build_label, sort_methods
-from single_fault.src.step_based_multi_step import (
+from single_fault.experiments.token_based_segmentation.evaluate_segmentation import build_label, sort_methods
+from single_fault.methods.step_based_multi_step import (
     ContextMode,
     build_method_name,
     get_context_steps,
