@@ -1,0 +1,1 @@
+{"question": "The solution to $-4 < 2(x - 1) < 8$ is expressed in the form $a < x < b$. Find the value of $a + b$.", "trajectory": [{"step": 1, "agent_name": "RoleAssigner", "content": "None"}], "faulty_agents": [{"agent_name": "RoleAssigner", "error_type": "FM-3.3"}, {"agent_name": "Solver", "error_type": "FM-2.3"}, {"agent_name": "Critic", "error_type": "FM-2.5"}]}

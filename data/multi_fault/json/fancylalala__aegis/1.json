@@ -1,0 +1,26 @@
+{
+  "question": "A variable force of $5 x^{-2}$ pounds moves an object along a straight line when it is $x$ feet from the origin. Calculate the work done in moving the object from $x=1 \\mathrm{~ft}$ to $x=10 \\mathrm{~ft}$.",
+  "trajectory": [
+    {
+      "step": 1,
+      "agent_name": "Assistant1",
+      "content": "To calculate the work done by a variable force when moving an object along a straight line, we can use the formula for work done by a force \\( F(x) \\) over a distance from \\( a \\) to \\( b \\):\n\n\\[\nW = \\int_a^b F(x) \\, dx\n\\]\n\nIn this case, the force \\( F(x) \\) is given as \\( 5x^{-2} \\) pounds, and we need to calculate the work done in moving the object from \\( x = 1 \\) ft to \\( x = 10 \\) ft. Thus, we have:\n\n\\[\nW = \\int_1^{10} 5x^{-2} \\, dx\n\\]\n\nFirst, we can factor out the constant 5 from the integral:\n\n\\[\nW = 5 \\int_1^{10} x^{-2} \\, dx\n\\]\n\nNext, we need to compute the integral \\( \\int x^{-2} \\, dx \\). The antiderivative of \\( x^{-2} \\) is:\n\n\\[\n\\int x^{-2} \\, dx = -x^{-1} + C = -\\frac{1}{x} + C\n\\]\n\nNow we can evaluate the definite integral:\n\n\\[\nW = 5 \\left[ -\\frac{1}{x} \\right]_1^{10}\n\\]\n\nCalculating the values at the bounds:\n\n\\[\nW = 5 \\left( -\\frac{1}{10} - \\left(-\\frac{1}{1}\\right) \\right)\n\\]\n\nThis simplifies to:\n\n\\[\nW = 5 \\left( -\\frac{1}{10} + 1 \\right) = 5 \\left( 1 - \\frac{1}{10} \\right) = 5 \\left( \\frac{10}{10} - \\frac{1}{10} \\right) = 5 \\left( \\frac{9}{10} \\right)\n\\]\n\nThus, we have:\n\n\\[\nW = \\frac{45}{10} = 4.5 \\text{ ft-lb}\n\\]\n\nTherefore, the work done in moving the object from \\( x = 1 \\) ft to \\( x = 10 \\) ft is:\n\n\\[\n\\boxed{4.5} \\text{ ft-lb}\n\\]"
+    },
+    {
+      "step": 2,
+      "agent_name": "Assistant2",
+      "content": "To calculate the work done by a variable force when moving an object along a straight line, we can use the formula for work done by a force \\( F(x) \\) over a distance from \\( a \\) to \\( b \\):\n\n\\[\nW = \\int_a^b F(x) \\, dx\n\\]\n\nIn this scenario, the force \\( F(x) \\) is given as \\( 5x^{-2} \\) pounds, and we will find the work done in moving the object from \\( x = 1 \\) ft to \\( x = 10 \\) ft. We can write this as:\n\n\\[\nW = \\int_1^{10} 5x^{-2} \\, dx\n\\]\n\nHere, we should factor out the constant 5 from the integral:\n\n\\[\nW = 5 \\int_1^{10} x^{-2} \\, dx\n\\]\n\nTo compute the integral \\( \\int x^{-2} \\, dx \\), we use the antiderivative which is:\n\n\\[\n\\int x^{-2} \\, dx = x^{-1} + C\n\\]\n\nNext, we evaluate the definite integral:\n\n\\[\nW = 5 \\left[ x^{-1} \\right]_1^{10}\n\\]\n\nCalculating the limits gives:\n\n\\[\nW = 5 \\left( \\frac{1}{10} - \\frac{1}{1} \\right)\n\\]\n\nThis simplifies to:\n\n\\[\nW = 5 \\left( \\frac{1}{10} - 1 \\right) = 5 \\left( -\\frac{9}{10} \\right)\n\\]\n\nThus, we find:\n\n\\[\nW = -\\frac{45}{10} = -4.5\n\\]\n\nTherefore, the work done in moving the object from \\( x = 1 \\) ft to \\( x = 10 \\) ft is:\n\n\\[\n\\boxed{-4.5} \\text{ foot-pounds}\n\\]"
+    },
+    {
+      "step": 3,
+      "agent_name": "Assistant3",
+      "content": "To calculate the work done by a variable force when moving an object along a straight line, we can use the formula for work done by a force \\( F(x) \\) over a distance from \\( a \\) to \\( b \\):\n\n\\[\nW = \\int_a^b F(x) \\, dx\n\\]\n\nIn this case, the force \\( F(x) \\) is given as \\( 5x^{-2} \\) pounds, and we need to calculate the work done in moving the object from \\( x = 1 \\) ft to \\( x = 10 \\) ft. Thus, we have:\n\n\\[\nW = \\int_1^{10} 5x^{-2} \\, dx\n\\]\n\nFirst, we factor out the constant \\( 5 \\):\n\n\\[\nW = 5 \\int_1^{10} x^{-2} \\, dx\n\\]\n\nNext, we need to compute the integral \\( \\int x^{-2} \\, dx \\). The antiderivative of \\( x^{-2} \\) is:\n\n\\[\n\\int x^{-2} \\, dx = x^{-1} + C = \\frac{1}{x} + C\n\\]\n\nNow we can evaluate the definite integral:\n\n\\[\nW = 5 \\left[ \\frac{1}{x} \\right]_1^{10}\n\\]\n\nCalculating the limits:\n\n\\[\nW = 5 \\left( \\frac{1}{1} - \\frac{1}{10} \\right)\n\\]\n\nThis simplifies to:\n\n\\[\nW = 5 \\left( 1 - \\frac{1}{10} \\right) = 5 \\left( \\frac{10}{10} - \\frac{1}{10} \\right) = 5 \\left( \\frac{9}{10} \\right)\n\\]\n\nThus, we have:\n\n\\[\nW = \\frac{45}{10} = 6 \\text{ ft-lb}\n\\]\n\nTherefore, the work done in moving the object from \\( x = 1 \\) ft to \\( x = 10 \\) ft is \n\n\\[\n\\boxed{6} \\text{ ft-lb}\n\\]"
+    }
+  ],
+  "faulty_agents": [
+    { "agent_name": "assistant2", "error_type": "FM-2.4" },
+    { "agent_name": "assistant4", "error_type": "FM-2.1" },
+    { "agent_name": "assistant3", "error_type": "FM-2.1" },
+    { "agent_name": "ranker5", "error_type": "FM-2.6" }
+  ]
+}

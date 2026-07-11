@@ -1,0 +1,1 @@
+{"question": "In how many ways can  5 students be selected from a group of 6 students?", "trajectory": [{"step": 1, "agent_name": "RoleAssigner", "content": "None"}], "faulty_agents": [{"agent_name": "RoleAssigner", "error_type": "FM-3.3"}, {"agent_name": "Solver", "error_type": "FM-2.3"}, {"agent_name": "Critic", "error_type": "FM-2.5"}]}
