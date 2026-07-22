@@ -165,3 +165,5 @@ node_modules/
 !.yarn/releases
 
 *.csv
+.ruff_cache
+data/

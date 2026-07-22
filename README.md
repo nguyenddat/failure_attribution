@@ -30,7 +30,8 @@ Agentic failure attribution is the process of identifying errors that occur in a
 ## Runtime Note
 
 Before running project scripts or tests locally, activate the Conda environment with `conda activate segment` so Python commands use the expected runtime.
-If a required library is missing, install it after activation with `pip install <package>`, then update `requirements.txt` using `pip freeze > requirements.txt`.
+All Python commands should use the runtime from that activated environment.
+If a required library is missing or the environment is not ready, stop immediately and report it instead of installing dependencies or updating `requirements.txt`.
 
 This collection focuses on research that directly addresses:
 - **Automated Failure Attribution**: Methods for identifying failures from agentic trajectories.
