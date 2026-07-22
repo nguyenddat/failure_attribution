@@ -11,6 +11,12 @@ def _group_of(code: str) -> str:
     return code.split(".", 1)[0]
 
 
+class CostMetrics(BaseModel):
+    input_tokens: int
+    output_tokens: int
+    latency: float
+
+
 class PerformanceMetrics(BaseModel):
     gt_faults: list[str]
     pred_faults: list[str]
