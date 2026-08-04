@@ -1,8 +1,7 @@
 """Download the TRAIL dataset (PatronusAI/TRAIL) into a single local folder.
 
 TRAIL ships two Hugging Face configs, ``gaia`` and ``swe_bench``. Both are
-written to the same output directory; the originating config is kept on each
-record via the ``source`` field.
+written to the same output directory, numbered consecutively.
 
 Only the fields needed for error localization are written out; see
 ``schemas/trail.py`` for the resulting shape and ``build_span`` below for what
@@ -128,8 +127,6 @@ def load_data_path() -> Path:
                 continue
 
             data = Trace(
-                trace_id=trace["trace_id"],
-                source=config,
                 spans=[build_span(span) for span in trace["spans"]],
                 errors=labels["errors"],
                 scores=labels["scores"][0],

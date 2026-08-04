@@ -59,10 +59,6 @@ class Scores(BaseModel):
 
 
 class Trace(BaseModel):
-    trace_id: str
-    # "gaia" | "swe_bench" -- the HF config the trace came from
-    source: str
-
     # trajectory
     spans: List[Span]
 
