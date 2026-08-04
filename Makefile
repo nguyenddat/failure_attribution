@@ -1,11 +1,12 @@
 PYTHON ?= python
 WW_DIR := data/error_localization/single_fault
 MAST_DIR := data/error_categorization/mast
+TRAIL_DIR := data/error_localization/multi_fault/trail
 
 # Shell-agnostic recursive delete (make picks cmd.exe on Windows, sh elsewhere).
 RM_DIR = $(PYTHON) -c "import shutil,sys; shutil.rmtree(sys.argv[1], ignore_errors=True)"
 
-.PHONY: load_whowhen load_whowhen_algo load_whowhen_hand load_mast
+.PHONY: load_whowhen load_whowhen_algo load_whowhen_hand load_mast load_trail
 
 load_whowhen: load_whowhen_algo load_whowhen_hand
 
@@ -20,3 +21,7 @@ load_whowhen_hand:
 load_mast:
 	$(RM_DIR) "$(MAST_DIR)"
 	$(PYTHON) -m data.error_categorization.mast
+
+load_trail:
+	$(RM_DIR) "$(TRAIL_DIR)"
+	$(PYTHON) -m data.error_localization.multi_fault.trail
