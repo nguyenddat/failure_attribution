@@ -1,14 +1,22 @@
 PYTHON ?= python
 WW_DIR := data/error_localization/single_fault
+MAST_DIR := data/error_categorization/mast
 
-.PHONY: load_whowhen load_whowhen_algo load_whowhen_hand
+# Shell-agnostic recursive delete (make picks cmd.exe on Windows, sh elsewhere).
+RM_DIR = $(PYTHON) -c "import shutil,sys; shutil.rmtree(sys.argv[1], ignore_errors=True)"
+
+.PHONY: load_whowhen load_whowhen_algo load_whowhen_hand load_mast
 
 load_whowhen: load_whowhen_algo load_whowhen_hand
 
 load_whowhen_algo:
-	rm -rf "$(WW_DIR)/who_and_when__algorithm-generated"
+	$(RM_DIR) "$(WW_DIR)/who_and_when__algorithm-generated"
 	$(PYTHON) -m data.error_localization.single_fault.ww_algorithm_generated
 
 load_whowhen_hand:
-	rm -rf "$(WW_DIR)/who_and_when__hand-crafted"
+	$(RM_DIR) "$(WW_DIR)/who_and_when__hand-crafted"
 	$(PYTHON) -m data.error_localization.single_fault.ww_hand_crafted
+
+load_mast:
+	$(RM_DIR) "$(MAST_DIR)"
+	$(PYTHON) -m data.error_categorization.mast
