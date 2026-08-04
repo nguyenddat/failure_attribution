@@ -4,7 +4,9 @@ TRAIL ships two Hugging Face configs, ``gaia`` and ``swe_bench``. Both are
 written to the same output directory; the originating config is kept on each
 record via the ``source`` field.
 
-Each trace is stored raw; the schema lives in ``schemas/trail.py``.
+Only the fields needed for error localization are written out; see
+``schemas/trail.py`` for the resulting shape and ``build_span`` below for what
+gets dropped.
 """
 
 import json
@@ -15,7 +17,7 @@ from typing import Any, Dict, Iterator, List, Tuple
 import pandas as pd
 from huggingface_hub import hf_hub_download
 
-from schemas.trail import Trace
+from schemas.trail import LogRecord, Span, Trace
 
 base_dir = Path(__file__).resolve().parent
 
@@ -45,6 +47,56 @@ def flatten_spans(spans: List[Dict[str, Any]]) -> Iterator[Dict[str, Any]]:
     for span in spans:
         yield span
         yield from flatten_spans(span.get("child_spans") or [])
+
+
+# Project/tenant bookkeeping, identical on every span of a trace.
+NOISE_ATTRIBUTE_PREFIXES = ("pat.",)
+NOISE_ATTRIBUTES = ("input.mime_type", "output.mime_type")
+
+# On LLM spans these two restate llm.input_messages.*/llm.output_messages.*
+# verbatim as one JSON blob and account for ~40% of the raw dataset size.
+REDUNDANT_IO_ATTRIBUTES = ("input.value", "output.value")
+
+
+def select_attributes(attributes: Dict[str, Any]) -> Dict[str, Any]:
+    drop = set(NOISE_ATTRIBUTES)
+    if "llm.input_messages.0.message.content" in attributes:
+        drop.update(REDUNDANT_IO_ATTRIBUTES)
+
+    return {
+        key: value
+        for key, value in attributes.items()
+        if key not in drop and not key.startswith(NOISE_ATTRIBUTE_PREFIXES)
+    }
+
+
+def build_log(log: Dict[str, Any]) -> LogRecord:
+    # The rest of a log record is transport metadata (trace/span ids already on
+    # the span, resource/scope descriptors, empty evaluations/annotations).
+    return LogRecord(
+        timestamp=log["timestamp"],
+        severity_text=log.get("severity_text", ""),
+        body=log.get("body"),
+    )
+
+
+def build_span(span: Dict[str, Any]) -> Span:
+    """Keep identity, ordering, content and structure; drop OTel plumbing.
+
+    Dropped: trace_id/trace_state/trace_flags, service_name, resource_attributes,
+    scope_name/scope_version, links, duration and status (``span_kind`` is
+    ``Internal`` and ``status_code`` ``Unset`` on every span in the dataset).
+    """
+    return Span(
+        span_id=span["span_id"],
+        parent_span_id=span.get("parent_span_id"),
+        name=span["span_name"],
+        timestamp=span["timestamp"],
+        attributes=select_attributes(span.get("span_attributes") or {}),
+        logs=[build_log(log) for log in span.get("logs") or []],
+        events=span.get("events") or [],
+        child_spans=[build_span(child) for child in span.get("child_spans") or []],
+    )
 
 
 def load_dataframe(config: str) -> pd.DataFrame:
@@ -78,8 +130,9 @@ def load_data_path() -> Path:
             data = Trace(
                 trace_id=trace["trace_id"],
                 source=config,
-                trace=trace,
-                labels=labels,
+                spans=[build_span(span) for span in trace["spans"]],
+                errors=labels["errors"],
+                scores=labels["scores"][0],
             )
 
             with open(file_path, "w", encoding="utf-8") as file:
