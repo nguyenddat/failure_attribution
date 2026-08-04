@@ -3,11 +3,12 @@ WW_DIR := data/error_localization/single_fault
 MAST_DIR := data/error_categorization/mast
 TRAIL_DIR := data/error_localization/multi_fault/trail
 AEGIS_DIR := data/error_localization/multi_fault/aegis
+AEB_DIR := data/error_localization/single_fault/agent_error_bench
 
 # Shell-agnostic recursive delete (make picks cmd.exe on Windows, sh elsewhere).
 RM_DIR = $(PYTHON) -c "import shutil,sys; shutil.rmtree(sys.argv[1], ignore_errors=True)"
 
-.PHONY: load_whowhen load_whowhen_algo load_whowhen_hand load_mast load_trail load_aegis
+.PHONY: load_whowhen load_whowhen_algo load_whowhen_hand load_mast load_trail load_aegis load_agent_error_bench
 
 load_whowhen: load_whowhen_algo load_whowhen_hand
 
@@ -30,3 +31,7 @@ load_trail:
 load_aegis:
 	$(RM_DIR) "$(AEGIS_DIR)"
 	$(PYTHON) -m data.error_localization.multi_fault.aegis
+
+load_agent_error_bench:
+	$(RM_DIR) "$(AEB_DIR)"
+	$(PYTHON) -m data.error_localization.single_fault.agent_error_bench
