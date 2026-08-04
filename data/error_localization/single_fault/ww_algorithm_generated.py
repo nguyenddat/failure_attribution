@@ -5,20 +5,19 @@ from typing import Any, List
 
 import pandas as pd
 
-from data.single_fault.utils import AgentBehavior, Data, dataset_name_to_filename
+from data.error_localization.single_fault.utils import dataset_name_to_filename
+from schemas.who_and_when import AgentBehavior, Data
 
 base_dir = Path(__file__).resolve().parent
 
 dataset_name = "who&when/algorithm-generated"
 dataset_link = "hf://datasets/Kevin355/Who_and_When/Algorithm-Generated.parquet"
-dataset_path = base_dir / "json" / dataset_name_to_filename(dataset_name).replace(".json", "")
-dataset_path.mkdir(parents=True, exist_ok=True)
+dataset_path = base_dir / dataset_name_to_filename(dataset_name).replace(".json", "")
 
 problem_fields = ["question"]
 trajectory_fields = ["history", "mistake_agent", "mistake_step"]
 selected_fields = problem_fields + trajectory_fields
 
-output_dir = Path(__file__).resolve().parent / "json"
 
 def history_to_trajectory(history: Any) -> List[AgentBehavior]:
     trajectory = []
@@ -36,6 +35,7 @@ def load_dataframe() -> pd.DataFrame:
     return df[selected_fields]
 
 def load_data_path() -> Path:
+    dataset_path.mkdir(parents=True, exist_ok=True)
     df = load_dataframe()
 
     for i, row in df.iterrows():
