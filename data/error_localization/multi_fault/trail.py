@@ -79,6 +79,34 @@ def build_log(log: Dict[str, Any]) -> LogRecord:
     )
 
 
+QUESTION_PREFIX = "New task:"
+
+
+def extract_question(spans: List[Span]) -> str:
+    """Recover the problem statement from the trace.
+
+    TRAIL has no problem statement column: the task text only appears as the
+    first user message handed to the agent, prefixed with "New task:". Both
+    configs carry it (the GAIA question for ``gaia``, the issue statement for
+    ``swe_bench``).
+    """
+    for span in flatten_spans_model(spans):
+        for key in sorted(span.attributes):
+            value = span.attributes[key]
+            if not key.endswith(".message.content") or not isinstance(value, str):
+                continue
+            if value.startswith(QUESTION_PREFIX):
+                return value[len(QUESTION_PREFIX):].strip()
+    return ""
+
+
+def flatten_spans_model(spans: List[Span]) -> Iterator[Span]:
+    """Depth-first walk over already-built ``Span`` models."""
+    for span in spans:
+        yield span
+        yield from flatten_spans_model(span.child_spans)
+
+
 def build_span(span: Dict[str, Any]) -> Span:
     """Keep identity, ordering, content and structure; drop OTel plumbing.
 
@@ -126,10 +154,11 @@ def load_data_path() -> Path:
                 skipped.append((config, int(row_index), str(error)))
                 continue
 
+            spans = [build_span(span) for span in trace["spans"]]
             data = Trace(
-                spans=[build_span(span) for span in trace["spans"]],
+                question=extract_question(spans),
+                spans=spans,
                 errors=labels["errors"],
-                scores=labels["scores"][0],
             )
 
             with open(file_path, "w", encoding="utf-8") as file:

@@ -10,6 +10,10 @@ flags) and the ``input.value``/``output.value`` attributes that merely restate
 
 The span tree stays nested (``child_spans``) because ``Error.location`` is a
 ``span_id`` inside that tree, not a step index.
+
+The dataset ships no problem statement column, so ``question`` is recovered
+from the trace itself (the "New task:" prompt). It ships no reference answer at
+all, so there is no ground-truth field.
 """
 
 from typing import Any, Dict, List, Optional
@@ -46,22 +50,12 @@ class Error(BaseModel):
     impact: str = ""
 
 
-class Scores(BaseModel):
-    reliability_score: float
-    reliability_reasoning: str
-    security_score: float
-    security_reasoning: str
-    instruction_adherence_score: float
-    instruction_adherence_reasoning: str
-    plan_opt_score: float
-    plan_opt_reasoning: str
-    overall: float
-
-
 class Trace(BaseModel):
+    # problem fields
+    question: str
+
     # trajectory
     spans: List[Span]
 
     # labels
     errors: List[Error]
-    scores: Scores
