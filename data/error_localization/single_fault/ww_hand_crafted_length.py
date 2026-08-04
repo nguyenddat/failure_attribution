@@ -1,12 +1,9 @@
-"""Trace length distribution for who&when hand-crafted."""
+"""Trace length adapter for who&when hand-crafted."""
 
-from pathlib import Path
 from typing import List
 
 from data.error_localization.single_fault.ww_hand_crafted import dataset_path
-from data.trace_length import run
-
-figures_dir = Path(__file__).resolve().parent / "figures"
+from data.trace_length import Dataset
 
 
 def contents(data: dict) -> List[str]:
@@ -17,5 +14,4 @@ def steps(data: dict) -> int:
     return len(data["trajectory"])
 
 
-if __name__ == "__main__":
-    run("who_and_when__hand-crafted", dataset_path, contents, steps, figures_dir)
+DATASET = Dataset("who&when hand-crafted", dataset_path, contents, steps)

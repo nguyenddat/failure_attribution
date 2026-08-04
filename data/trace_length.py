@@ -1,4 +1,4 @@
-"""Trace length distribution shared by every dataset in the repo.
+"""Trace length distribution across every dataset in the repo.
 
 Length is reported in two units:
 
@@ -10,15 +10,17 @@ Length is reported in two units:
 The token plot answers one question: how many traces do not fit into the
 context window of the models we run (:data:`CONTEXT_LIMITS`)?
 
-This module knows nothing about any dataset schema. Each dataset ships a thin
-adapter next to its loader that supplies a name, a JSON directory and two pure
-functions over one decoded document, then calls :func:`run`.
+Every dataset is drawn on the same pair of axes, so the two output files are the
+whole picture. This module knows nothing about any dataset schema: each dataset
+ships a thin adapter next to its loader that declares a :class:`Dataset` with
+two pure functions over one decoded document. ``data/trace_length_all.py``
+collects those adapters and draws the figures.
 """
 
 import json
 from dataclasses import dataclass
 from pathlib import Path
-from typing import Callable, Iterable, List, Optional
+from typing import Callable, Dict, Iterable, List, Optional
 
 import matplotlib.pyplot as plt
 import numpy as np
@@ -38,7 +40,12 @@ LIMIT_COLORS = {
     "deepseek-chat": "teal",
 }
 
-KDE_COLOR = "crimson"
+# tab10 without its red and cyan, which would read as the context-limit lines.
+PALETTE = [
+    color
+    for index, color in enumerate(plt.get_cmap("tab10").colors)
+    if index not in (3, 9)
+]
 
 
 def count_tokens(parts: Iterable[str]) -> int:
@@ -60,13 +67,30 @@ class TraceLength:
 
 Contents = Callable[[dict], List[str]]
 Steps = Callable[[dict], Optional[int]]
+# Dataset name -> line colour, shared by both figures.
+Colors = Dict[str, tuple]
 
 
-def collect(json_dir: Path, contents: Contents, steps: Steps) -> List[TraceLength]:
-    files = [path for path in sorted(json_dir.glob("*.json")) if path.name != "metadata.json"]
+@dataclass
+class Dataset:
+    """What one adapter declares about its dataset."""
+
+    name: str
+    json_dir: Path
+    contents: Contents
+    steps: Steps
+
+
+def collect(dataset: Dataset) -> List[TraceLength]:
+    files = [
+        path
+        for path in sorted(dataset.json_dir.glob("*.json"))
+        if path.name != "metadata.json"
+    ]
     if not files:
         raise FileNotFoundError(
-            f"no JSON files in {json_dir}; generate them with the matching `make load_*` target"
+            f"no JSON files in {dataset.json_dir}; "
+            "generate them with the matching `make load_*` target"
         )
 
     lengths = []
@@ -76,8 +100,8 @@ def collect(json_dir: Path, contents: Contents, steps: Steps) -> List[TraceLengt
             lengths.append(
                 TraceLength(
                     name=path.stem,
-                    n_steps=steps(data),
-                    n_tokens=count_tokens(contents(data)),
+                    n_steps=dataset.steps(data),
+                    n_tokens=count_tokens(dataset.contents(data)),
                 )
             )
         except KeyError as error:
@@ -107,7 +131,7 @@ def summarize(name: str, lengths: List[TraceLength]) -> None:
 
 
 def _human(value: float) -> str:
-    """Format a token count for an axis tick: 1.0K, 10K, 100K, 1.0M."""
+    """Format a count for an axis tick: 1.0K, 10K, 100K, 1.0M."""
     for scale, suffix in ((1e6, "M"), (1e3, "K")):
         if value >= scale:
             scaled = value / scale
@@ -120,94 +144,118 @@ def _kde_curve(values: np.ndarray, pad: float) -> tuple:
     return grid, gaussian_kde(values)(grid)
 
 
-def _finish(fig, ax, out_dir: Path, filename: str) -> Path:
+def _plot_series(ax, series: Dict[str, List[int]], pad: float, colors: Colors) -> tuple:
+    """Draw one log10 KDE per dataset; return the shared x range and peak."""
+    left, right, top = np.inf, -np.inf, 0.0
+
+    for name, values in series.items():
+        positive = [value for value in values if value > 0]
+        if len(positive) < len(values):
+            print(f"  {name}: dropped {len(values) - len(positive)} zero-length traces")
+        if len(positive) < 2:
+            print(f"  {name}: too few traces to fit a KDE; not drawn")
+            continue
+
+        grid, density = _kde_curve(np.log10(positive), pad)
+        ax.plot(
+            grid,
+            density,
+            color=colors[name],
+            linewidth=1.6,
+            label=f"{name} (n={len(positive):,})",
+        )
+        left, right, top = min(left, grid.min()), max(right, grid.max()), max(top, density.max())
+
+    return left, right, top
+
+
+def _log_ticks(ax, left: float, right: float) -> None:
+    ticks = np.arange(np.ceil(left), np.floor(right) + 1)
+    ax.set_xticks(ticks)
+    ax.set_xticklabels([_human(10.0**tick) for tick in ticks])
+
+
+def _finish(fig, ax, out_path: Path) -> Path:
     ax.set_ylabel("Density")
     ax.grid(linestyle=":", alpha=0.4)
-    ax.margins(y=0.05)
     fig.tight_layout()
 
-    out_dir.mkdir(parents=True, exist_ok=True)
-    out_path = out_dir / filename
+    out_path.parent.mkdir(parents=True, exist_ok=True)
     fig.savefig(out_path, dpi=150)
     plt.close(fig)
-    print(f"  saved: {out_path}")
+    print(f"saved: {out_path}")
     return out_path
 
 
-def plot_token_kde(name: str, values: List[int], out_dir: Path) -> Optional[Path]:
-    positive = [value for value in values if value > 0]
-    if len(positive) < len(values):
-        print(f"  dropped {len(values) - len(positive)} empty traces from the token plot")
-    if len(positive) < 2:
-        print("  too few traces to fit a KDE; token plot skipped")
-        return None
-
-    log_values = np.log10(positive)
-    grid, density = _kde_curve(log_values, pad=0.3)
-
-    fig, ax = plt.subplots(figsize=(7, 4.5))
-    ax.plot(grid, density, color=KDE_COLOR, linewidth=1.6, label=name)
+def plot_token_kde(series: Dict[str, List[int]], colors: Colors, out_path: Path) -> Path:
+    fig, ax = plt.subplots(figsize=(9, 5.5))
+    left, right, top = _plot_series(ax, series, 0.3, colors)
 
     # Keep every limit line inside the frame even when no trace reaches it.
     limits = [np.log10(limit) for limit in CONTEXT_LIMITS.values()]
-    left = min(grid.min(), min(limits) - 0.15)
-    right = max(grid.max(), max(limits) + 0.15)
+    left, right = min(left, min(limits) - 0.15), max(right, max(limits) + 0.15)
     ax.set_xlim(left, right)
-    ax.set_ylim(0, density.max() * 1.18)
-    top = ax.get_ylim()[1]
+    ax.set_ylim(0, top * 1.18)
+    ceiling = ax.get_ylim()[1]
 
-    over_counts = []
     for model, limit in CONTEXT_LIMITS.items():
         position = np.log10(limit)
         ax.axvline(position, color=LIMIT_COLORS[model], linestyle="--", linewidth=1.3)
         ax.text(
             position - 0.02,
-            top * 0.97,
-            f"{model} Context Limit",
+            ceiling * 0.97,
+            f"{model} Context Limit ({_human(limit)})",
             rotation=90,
             va="top",
             ha="right",
             fontsize=8,
             color=LIMIT_COLORS[model],
         )
-        over = sum(1 for value in positive if value > limit)
-        over_counts.append(f"{over:,} / {len(positive):,} over {model} ({_human(limit)})")
 
-    ticks = np.arange(np.ceil(left), np.floor(right) + 1)
-    ax.set_xticks(ticks)
-    ax.set_xticklabels([_human(10.0**tick) for tick in ticks])
+    _log_ticks(ax, left, right)
     ax.set_xlabel("Token Lengths (Log10 Scale)")
-    ax.set_title(f"{name}: Token Length Distribution (Log10 Scale)")
-    ax.legend(title="\n".join(over_counts), title_fontsize=8, fontsize=8, loc="upper left")
+    ax.set_title("Token Length Distribution (Log10 Scale)")
+    ax.legend(fontsize=8, loc="upper left")
 
-    return _finish(fig, ax, out_dir, f"{name}_token_length.png")
-
-
-def plot_step_kde(name: str, values: List[int], out_dir: Path) -> Optional[Path]:
-    if len(values) < 2:
-        print("  too few traces to fit a KDE; step plot skipped")
-        return None
-
-    array = np.asarray(values, dtype=float)
-    grid, density = _kde_curve(array, pad=max(1.0, array.std() * 0.3))
-
-    fig, ax = plt.subplots(figsize=(7, 4.5))
-    ax.plot(grid, density, color=KDE_COLOR, linewidth=1.6, label=name)
-    ax.set_xlabel("Step count")
-    ax.set_title(f"{name}: Step Count Distribution")
-    ax.legend(fontsize=8, loc="upper right")
-
-    return _finish(fig, ax, out_dir, f"{name}_step_length.png")
+    return _finish(fig, ax, out_path)
 
 
-def run(name: str, json_dir: Path, contents: Contents, steps: Steps, out_dir: Path) -> None:
-    lengths = collect(json_dir, contents, steps)
-    summarize(name, lengths)
+def plot_step_kde(series: Dict[str, List[int]], colors: Colors, out_path: Path) -> Path:
+    """Step counts span 1..~200 across datasets, so this axis is log10 too."""
+    fig, ax = plt.subplots(figsize=(9, 5.5))
+    left, right, top = _plot_series(ax, series, 0.15, colors)
 
-    plot_token_kde(name, [length.n_tokens for length in lengths], out_dir)
+    ax.set_xlim(left, right)
+    ax.set_ylim(0, top * 1.1)
+    _log_ticks(ax, left, right)
+    ax.set_xlabel("Step Count (Log10 Scale)")
+    ax.set_title("Step Count Distribution (Log10 Scale)")
+    ax.legend(fontsize=8, loc="upper left")
 
-    step_values = [length.n_steps for length in lengths if length.n_steps is not None]
-    if step_values:
-        plot_step_kde(name, step_values, out_dir)
-    else:
-        print("  no step structure in this dataset; step plot skipped")
+    return _finish(fig, ax, out_path)
+
+
+def run(datasets: List[Dataset], out_dir: Path) -> None:
+    tokens: Dict[str, List[int]] = {}
+    steps: Dict[str, List[int]] = {}
+
+    for dataset in datasets:
+        lengths = collect(dataset)
+        summarize(dataset.name, lengths)
+
+        tokens[dataset.name] = [length.n_tokens for length in lengths]
+        step_values = [length.n_steps for length in lengths if length.n_steps is not None]
+        if step_values:
+            steps[dataset.name] = step_values
+        else:
+            print("  no step structure in this dataset; left out of the step plot")
+
+    # Colour is fixed per dataset so both figures read the same way, even
+    # though MAST appears in only one of them.
+    colors = {
+        dataset.name: PALETTE[index % len(PALETTE)]
+        for index, dataset in enumerate(datasets)
+    }
+
+    plot_token_kde(tokens, colors, out_dir / "trace_token_length.png")
+    plot_step_kde(steps, colors, out_dir / "trace_step_length.png")

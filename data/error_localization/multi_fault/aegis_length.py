@@ -1,12 +1,9 @@
-"""Trace length distribution for AEGIS."""
+"""Trace length adapter for AEGIS."""
 
-from pathlib import Path
 from typing import List
 
 from data.error_localization.multi_fault.aegis import dataset_path
-from data.trace_length import run
-
-figures_dir = Path(__file__).resolve().parent / "figures"
+from data.trace_length import Dataset
 
 
 def contents(data: dict) -> List[str]:
@@ -21,5 +18,4 @@ def steps(data: dict) -> int:
     return len(data["trajectory"])
 
 
-if __name__ == "__main__":
-    run("aegis", dataset_path, contents, steps, figures_dir)
+DATASET = Dataset("aegis", dataset_path, contents, steps)

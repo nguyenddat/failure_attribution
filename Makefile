@@ -9,7 +9,7 @@ AEB_DIR := data/error_localization/single_fault/agent_error_bench
 RM_DIR = $(PYTHON) -c "import shutil,sys; shutil.rmtree(sys.argv[1], ignore_errors=True)"
 
 .PHONY: load_whowhen load_whowhen_algo load_whowhen_hand load_mast load_trail load_aegis load_agent_error_bench
-.PHONY: length_all length_whowhen_algo length_whowhen_hand length_mast length_trail length_aegis length_agent_error_bench
+.PHONY: trace_length
 
 load_whowhen: load_whowhen_algo load_whowhen_hand
 
@@ -37,23 +37,6 @@ load_agent_error_bench:
 	$(RM_DIR) "$(AEB_DIR)"
 	$(PYTHON) -m data.error_localization.single_fault.agent_error_bench
 
-# Trace length distribution (tokens + steps); figures are overwritten in place.
-length_all: length_whowhen_algo length_whowhen_hand length_mast length_trail length_aegis length_agent_error_bench
-
-length_whowhen_algo:
-	$(PYTHON) -m data.error_localization.single_fault.ww_algorithm_generated_length
-
-length_whowhen_hand:
-	$(PYTHON) -m data.error_localization.single_fault.ww_hand_crafted_length
-
-length_mast:
-	$(PYTHON) -m data.error_categorization.mast_length
-
-length_trail:
-	$(PYTHON) -m data.error_localization.multi_fault.trail_length
-
-length_aegis:
-	$(PYTHON) -m data.error_localization.multi_fault.aegis_length
-
-length_agent_error_bench:
-	$(PYTHON) -m data.error_localization.single_fault.agent_error_bench_length
+# Every dataset on one pair of axes; figures are overwritten in place.
+trace_length:
+	$(PYTHON) -m data.trace_length_all
