@@ -1,70 +1,56 @@
-"""Schema for the AgentErrorBench dataset (local files, not Hugging Face).
+"""Schema for the AgentErrorBench dataset (ulab-uiuc/AgentDebug, Google Drive release).
 
 Shared by the loader under ``data/error_localization/single_fault`` and by any
 experiment reading the generated JSON files.
 
-Every trajectory carries exactly one annotated failure, so this is single-fault
-localization with two extra labels: the failing *module* and the *failure type*
-inside that module. ``critical_failure_step``/``critical_failure_module`` in the
-raw labels merely restate the single ``step_annotations`` entry, so they collapse
-into one :class:`Failure`.
-
-The raw messages strictly alternate ``user``/``assistant``, so each step pairs
-the environment observation with the agent action that answered it; the step
-index then matches the annotated step directly.
-
-Only the fields needed for localization are kept. The loader drops
-``trajectory_id``, ``metadata.won`` (``False`` on all 200 trajectories),
-``metadata.steps`` (equal to the number of actions everywhere),
-``metadata.environment`` (equal to ``task_type``), ``metadata.model`` (a noisier
-spelling of the label's ``LLM``) and the run bookkeeping (``batch_idx``,
-``env_id``, ``test_idx``, ``timestamp``, ``gamefile``, ``pid``).
+Mirrors every raw field from both the trajectory file
+(``Original_Failure_Trajectory/<Env>/<trajectory_id>.json``) and its label
+(``Label/<env>_labels.json``) — nothing is dropped. An earlier version of
+this schema paired up messages into observation/action Step objects and
+collapsed the single ``step_annotations`` entry into a flat ``Failure``;
+this version keeps ``messages`` as the raw alternating list and
+``step_annotations`` as the raw list of dicts (each entry's failing module
+is a dynamic dict key, e.g. ``{"step": 5, "planning": {...}}`` — not worth
+forcing into a fixed field name).
 """
 
-from typing import List
+from typing import Any, Dict, List, Optional
 
 from pydantic import BaseModel
 
-# The annotations name the same module two ways.
-MODULE_ALIASES = {"planning": "plan"}
 
-# Casing/word-order variants of the same failure type.
-FAILURE_TYPE_ALIASES = {"plan_inefficient": "inefficient_plan"}
-
-
-def normalize_module(module: str) -> str:
-    module = module.strip().lower()
-    return MODULE_ALIASES.get(module, module)
+class Message(BaseModel):
+    role: str
+    content: str
 
 
-def normalize_failure_type(failure_type: str) -> str:
-    failure_type = failure_type.strip().lower()
-    return FAILURE_TYPE_ALIASES.get(failure_type, failure_type)
+class Metadata(BaseModel):
+    batch_idx: int
+    env_id: int
+    test_idx: int
+    model: str
+    steps: int
+    won: bool
+    timestamp: str
+    environment: str
+    pid: Optional[str] = None  # gaia only
+    gamefile: Optional[str] = None  # alfworld only
 
 
-class Step(BaseModel):
-    step: int
-    # Environment output; on step 1 this is the prompt stating the task.
-    observation: str
-    action: str
-
-
-class Failure(BaseModel):
-    step: int
-    # plan / action / memory / reflection / system
-    module: str
-    failure_type: str = ""
-    reasoning: str = ""
+class Label(BaseModel):
+    trajectory_id: str
+    LLM: str
+    task_type: str
+    critical_failure_step: int
+    critical_failure_module: str
+    # raw list of {"step": int, "<module>": {"failure_type": str, "reasoning": str}}
+    step_annotations: List[Dict[str, Any]]
 
 
 class Data(BaseModel):
-    # problem fields
-    question: str
-    task_type: str
-    model: str
+    trajectory_id: str
 
-    # trajectory fields
-    trajectory: List[Step]
+    messages: List[Message]
+    metadata: Metadata
 
-    # labels
-    failure: Failure
+    label: Label

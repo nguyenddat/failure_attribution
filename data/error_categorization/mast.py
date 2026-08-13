@@ -1,7 +1,14 @@
 """Loader for the MAST dataset (mcemri/MAST-Data).
 
 The schema lives in ``schemas/mast.py``; it is re-exported here so existing
-imports (``from data.error_categorization.mast import Sample, ...``) keep working.
+imports (``from data.error_categorization.mast import Sample, ...``) keep
+working.
+
+Keeps every raw column from the source dataset (``mas_name``, ``llm_name``,
+``benchmark_name``, ``trace_id``, ``trace.key``/``trace.index``/
+``trace.trajectory``, ``mast_annotation``) — nothing is dropped. ``faults``
+is a derived convenience field (codes where ``mast_annotation`` is truthy),
+kept alongside the raw dict for backward compatibility.
 
 Traces are unstructured logs, so each sample is written with the whole log in
 ``raw_trajectory`` and no step splitting. Segmentation is a separate, optional
@@ -30,11 +37,18 @@ dataset_link = "hf://datasets/mcemri/MAST-Data/MAD_full_dataset.json"
 
 
 def row_to_sample(row: pd.Series) -> Sample:
+    trace: dict = row["trace"]
     annotation: dict = row["mast_annotation"]
     faults = [code for code, value in annotation.items() if value]
     return Sample(
         mas_name=row["mas_name"],
-        raw_trajectory=row["trace"]["trajectory"],
+        llm_name=row["llm_name"],
+        benchmark_name=row["benchmark_name"],
+        trace_id=row["trace_id"],
+        trace_key=trace["key"],
+        trace_index=trace["index"],
+        raw_trajectory=trace["trajectory"],
+        mast_annotation=annotation,
         faults=faults,
     )
 

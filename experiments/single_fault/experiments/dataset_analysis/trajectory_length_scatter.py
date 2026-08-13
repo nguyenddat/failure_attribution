@@ -6,8 +6,8 @@ from pathlib import Path
 
 from experiments.single_fault.utils.experiment_paths import DATASET_ANALYSIS_OUTPUT_DIR
 
-PROJECT_ROOT = Path(__file__).resolve().parents[3]
-DATA_DIR = PROJECT_ROOT / "data" / "single_fault" / "json"
+PROJECT_ROOT = Path(__file__).resolve().parents[4]
+DATA_DIR = PROJECT_ROOT / "data" / "error_localization" / "single_fault"
 OUTPUT_DIR = DATASET_ANALYSIS_OUTPUT_DIR
 OUTPUT_PATH = OUTPUT_DIR / "trajectory_length_scatter.png"
 

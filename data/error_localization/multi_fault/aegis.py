@@ -3,8 +3,11 @@
 All three splits are written to the same output directory, numbered
 consecutively; the originating split is kept on each sample.
 
-Only the fields needed for error localization are written out; see
-``schemas/aegis.py`` for the resulting shape and what gets dropped.
+Keeps every raw field (schemas/aegis.py) — nothing is dropped, including
+known data-quality quirks (num_agents/num_injected_agents mismatch,
+per-step is_injected noise, is_injection_successful).
+
+Usage: python -m data.error_localization.multi_fault.aegis
 """
 
 import json
@@ -14,7 +17,16 @@ from typing import Any, Dict, List
 import pandas as pd
 from datasets import load_dataset
 
-from schemas.aegis import AgentBehavior, Data, FaultyAgent
+from schemas.aegis import (
+    AgentBehavior,
+    Data,
+    GroundTruth,
+    InjectedAgent,
+    Input,
+    Metadata,
+    Output,
+    OutputFaultyAgent,
+)
 
 base_dir = Path(__file__).resolve().parent
 
@@ -30,38 +42,63 @@ def build_trajectory(history: List[Dict[str, Any]]) -> List[AgentBehavior]:
             agent_name=item["agent_name"],
             content=item["content"] or "",
             phase=item["phase"] or "",
+            is_injected=item["is_injected"],
         )
         for item in history
     ]
 
 
-def build_faulty_agents(injected: List[Dict[str, Any]]) -> List[FaultyAgent]:
+def build_injected_agents(injected: List[Dict[str, Any]]) -> List[InjectedAgent]:
     return [
-        FaultyAgent(
+        InjectedAgent(
             agent_name=agent["agent_name"],
             error_type=agent["error_type"],
             injection_strategy=agent["injection_strategy"],
-            description=agent["malicious_action_description"] or "",
+            malicious_action_description=agent["malicious_action_description"] or "",
         )
         for agent in injected
+    ]
+
+
+def build_output_faulty_agents(faulty: List[Dict[str, Any]]) -> List[OutputFaultyAgent]:
+    return [
+        OutputFaultyAgent(
+            agent_name=agent["agent_name"],
+            error_type=agent["error_type"],
+            injection_strategy=agent["injection_strategy"],
+        )
+        for agent in faulty
     ]
 
 
 def row_to_data(row: pd.Series) -> Data:
     metadata = row["metadata"]
     input_ = row["input"]
+    output = row["output"]
     ground_truth = row["ground_truth"]
 
     return Data(
-        question=input_["query"],
-        framework=metadata["framework"],
-        benchmark=metadata["benchmark"],
-        task_type=metadata["task_type"],
+        id=row["id"],
         split=row["split"],
-        trajectory=build_trajectory(input_["conversation_history"]),
-        final_output=input_["final_output"] or "",
-        correct_answer=ground_truth["correct_answer"],
-        faulty_agents=build_faulty_agents(ground_truth["injected_agents"]),
+        metadata=Metadata(
+            framework=metadata["framework"],
+            benchmark=metadata["benchmark"],
+            model=metadata["model"],
+            num_agents=metadata["num_agents"],
+            num_injected_agents=metadata["num_injected_agents"],
+            task_type=metadata["task_type"],
+        ),
+        input=Input(
+            query=input_["query"],
+            conversation_history=build_trajectory(input_["conversation_history"]),
+            final_output=input_["final_output"] or "",
+        ),
+        output=Output(faulty_agents=build_output_faulty_agents(output["faulty_agents"])),
+        ground_truth=GroundTruth(
+            correct_answer=ground_truth["correct_answer"],
+            injected_agents=build_injected_agents(ground_truth["injected_agents"]),
+            is_injection_successful=ground_truth["is_injection_successful"],
+        ),
     )
 
 

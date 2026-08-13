@@ -4,7 +4,7 @@ from typing import List, Tuple
 import tiktoken
 from pydantic import BaseModel
 
-from data.fault_detection.mast import Sample, Metadata, render_taxonomy
+from data.error_categorization.mast import Sample, Metadata, render_taxonomy
 from ...metrics import calculate_performance_metrics, PerformanceMetrics, CostMetrics
 from ..get_chat_completion import get_chat_completion
 from ...baseline.methods.all_at_once import ExperimentMetadata

@@ -2,7 +2,7 @@ from typing import Optional, Tuple
 
 from pydantic import BaseModel
 
-from data.fault_detection.mast import Sample, Metadata, render_taxonomy
+from data.error_categorization.mast import Sample, Metadata, render_taxonomy
 from ...metrics import calculate_performance_metrics, PerformanceMetrics, CostMetrics
 from ..get_chat_completion import get_chat_completion
 

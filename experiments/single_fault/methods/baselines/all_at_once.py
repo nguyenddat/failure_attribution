@@ -18,7 +18,7 @@ def all_at_once_single_file(
     accuracy_metrics: AccuracyMetrics | None = None,
     cost_metrics: CostMetrics | None = None,
 ) -> Tuple[AccuracyMetrics, CostMetrics]:
-    from experiments.get_chat_completion import get_chat_completion
+    from experiments.single_fault.get_chat_completion import get_chat_completion
 
     trajectory = data.get("trajectory", [])
     step_to_agent_name = {}

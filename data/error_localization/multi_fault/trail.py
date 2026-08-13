@@ -1,13 +1,3 @@
-"""Download the TRAIL dataset (PatronusAI/TRAIL) into a single local folder.
-
-TRAIL ships two Hugging Face configs, ``gaia`` and ``swe_bench``. Both are
-written to the same output directory, numbered consecutively.
-
-Only the fields needed for error localization are written out; see
-``schemas/trail.py`` for the resulting shape and ``build_span`` below for what
-gets dropped.
-"""
-
 import json
 import re
 from pathlib import Path
@@ -16,7 +6,7 @@ from typing import Any, Dict, Iterator, List, Tuple
 import pandas as pd
 from huggingface_hub import hf_hub_download
 
-from schemas.trail import LogRecord, Span, Trace
+from schemas.trail import Error, LogRecord, Score, Span, Trace
 
 base_dir = Path(__file__).resolve().parent
 
@@ -41,45 +31,59 @@ def parse_json(raw: str) -> Dict[str, Any]:
         return json.loads(_TRAILING_COMMA.sub(r"\1", raw))
 
 
-def flatten_spans(spans: List[Dict[str, Any]]) -> Iterator[Dict[str, Any]]:
-    """Depth-first walk of the nested span tree (``child_spans``)."""
-    for span in spans:
-        yield span
-        yield from flatten_spans(span.get("child_spans") or [])
-
-
-# Project/tenant bookkeeping, identical on every span of a trace.
-NOISE_ATTRIBUTE_PREFIXES = ("pat.",)
-NOISE_ATTRIBUTES = ("input.mime_type", "output.mime_type")
-
-# On LLM spans these two restate llm.input_messages.*/llm.output_messages.*
-# verbatim as one JSON blob and account for ~40% of the raw dataset size.
-REDUNDANT_IO_ATTRIBUTES = ("input.value", "output.value")
-
-
-def select_attributes(attributes: Dict[str, Any]) -> Dict[str, Any]:
-    drop = set(NOISE_ATTRIBUTES)
-    if "llm.input_messages.0.message.content" in attributes:
-        drop.update(REDUNDANT_IO_ATTRIBUTES)
-
-    return {
-        key: value
-        for key, value in attributes.items()
-        if key not in drop and not key.startswith(NOISE_ATTRIBUTE_PREFIXES)
-    }
-
-
 def build_log(log: Dict[str, Any]) -> LogRecord:
-    # The rest of a log record is transport metadata (trace/span ids already on
-    # the span, resource/scope descriptors, empty evaluations/annotations).
     return LogRecord(
         timestamp=log["timestamp"],
+        trace_id=log["trace_id"],
+        span_id=log["span_id"],
+        trace_flags=log["trace_flags"],
         severity_text=log.get("severity_text", ""),
+        severity_number=log["severity_number"],
+        service_name=log.get("service_name", ""),
         body=log.get("body"),
+        resource_schema_url=log.get("resource_schema_url") or "",
+        resource_attributes=log.get("resource_attributes") or {},
+        scope_schema_url=log.get("scope_schema_url") or "",
+        scope_name=log.get("scope_name") or "",
+        scope_version=log.get("scope_version") or "",
+        scope_attributes=log.get("scope_attributes") or {},
+        log_attributes=log.get("log_attributes") or {},
+        evaluations=log.get("evaluations") or [],
+        annotations=log.get("annotations") or [],
+    )
+
+
+def build_span(span: Dict[str, Any]) -> Span:
+    return Span(
+        timestamp=span["timestamp"],
+        trace_id=span["trace_id"],
+        span_id=span["span_id"],
+        parent_span_id=span.get("parent_span_id"),
+        trace_state=span.get("trace_state") or "",
+        span_name=span["span_name"],
+        span_kind=span.get("span_kind") or "",
+        service_name=span.get("service_name") or "",
+        resource_attributes=span.get("resource_attributes") or {},
+        scope_name=span.get("scope_name") or "",
+        scope_version=span.get("scope_version") or "",
+        span_attributes=span.get("span_attributes") or {},
+        duration=span.get("duration") or "",
+        status_code=span.get("status_code") or "",
+        status_message=span.get("status_message") or "",
+        events=span.get("events") or [],
+        links=span.get("links") or [],
+        logs=[build_log(log) for log in span.get("logs") or []],
+        child_spans=[build_span(child) for child in span.get("child_spans") or []],
     )
 
 
 QUESTION_PREFIX = "New task:"
+
+
+def flatten_spans_model(spans: List[Span]) -> Iterator[Span]:
+    for span in spans:
+        yield span
+        yield from flatten_spans_model(span.child_spans)
 
 
 def extract_question(spans: List[Span]) -> str:
@@ -91,39 +95,13 @@ def extract_question(spans: List[Span]) -> str:
     ``swe_bench``).
     """
     for span in flatten_spans_model(spans):
-        for key in sorted(span.attributes):
-            value = span.attributes[key]
+        for key in sorted(span.span_attributes):
+            value = span.span_attributes[key]
             if not key.endswith(".message.content") or not isinstance(value, str):
                 continue
             if value.startswith(QUESTION_PREFIX):
                 return value[len(QUESTION_PREFIX):].strip()
     return ""
-
-
-def flatten_spans_model(spans: List[Span]) -> Iterator[Span]:
-    """Depth-first walk over already-built ``Span`` models."""
-    for span in spans:
-        yield span
-        yield from flatten_spans_model(span.child_spans)
-
-
-def build_span(span: Dict[str, Any]) -> Span:
-    """Keep identity, ordering, content and structure; drop OTel plumbing.
-
-    Dropped: trace_id/trace_state/trace_flags, service_name, resource_attributes,
-    scope_name/scope_version, links, duration and status (``span_kind`` is
-    ``Internal`` and ``status_code`` ``Unset`` on every span in the dataset).
-    """
-    return Span(
-        span_id=span["span_id"],
-        parent_span_id=span.get("parent_span_id"),
-        name=span["span_name"],
-        timestamp=span["timestamp"],
-        attributes=select_attributes(span.get("span_attributes") or {}),
-        logs=[build_log(log) for log in span.get("logs") or []],
-        events=span.get("events") or [],
-        child_spans=[build_span(child) for child in span.get("child_spans") or []],
-    )
 
 
 def load_dataframe(config: str) -> pd.DataFrame:
@@ -156,9 +134,12 @@ def load_data_path() -> Path:
 
             spans = [build_span(span) for span in trace["spans"]]
             data = Trace(
+                trace_id=trace["trace_id"],
                 question=extract_question(spans),
+                task_source=config,
                 spans=spans,
-                errors=labels["errors"],
+                errors=[Error(**e) for e in labels["errors"]],
+                scores=[Score(**s) for s in labels["scores"]],
             )
 
             with open(file_path, "w", encoding="utf-8") as file:

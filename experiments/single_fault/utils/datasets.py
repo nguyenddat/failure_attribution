@@ -3,8 +3,8 @@ from __future__ import annotations
 from pathlib import Path
 
 
-PROJECT_ROOT = Path(__file__).resolve().parents[1]
-DATA_DIR = PROJECT_ROOT.parent / "data" / "single_fault" / "json"
+PROJECT_ROOT = Path(__file__).resolve().parents[3]
+DATA_DIR = PROJECT_ROOT / "data" / "error_localization" / "single_fault"
 
 DATASET_DIRS = {
     "ww_algorithm_generated": DATA_DIR / "who_and_when__algorithm-generated",

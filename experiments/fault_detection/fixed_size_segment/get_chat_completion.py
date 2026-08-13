@@ -10,7 +10,7 @@ from experiments.fault_detection.fixed_size_segment.prompts.fixed_size_segment i
     prompt as prompt_fixed_size_segment,
     parser as parser_fixed_size_segment,
 )
-from experiments.models import get_model
+from experiments.chat_models import get_model
 
 if TYPE_CHECKING:
     from experiments.fault_detection.fixed_size_segment.methods.fixed_size_segment import (

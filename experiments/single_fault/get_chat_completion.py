@@ -19,7 +19,7 @@ from experiments.single_fault.system_prompt.subtask_alignment import (
     prompt as prompt_subtask_alignment,
     parser as parser_subtask_alignment,
 )
-from experiments.models import get_model
+from experiments.chat_models import get_model
 from experiments.single_fault.utils.schema import (
     AllAtOnceInput,
     StepByStepInput,

@@ -1,14 +1,14 @@
 from __future__ import annotations
 
+import json
 import threading
 import time
-from concurrent.futures import ThreadPoolExecutor, as_completed
 from pathlib import Path
 
 import pandas as pd
 from tqdm import tqdm
 
-from data.fault_detection.mast import Sample, MAST_METADATA, json_dir
+from data.error_categorization.mast import Sample, MAST_METADATA, json_dir
 from experiments.fault_detection.baseline.methods.all_at_once import ExperimentMetadata
 from experiments.fault_detection.overlapping_segment.methods.overlapping_segment import (
     SEGMENT_LEVELS,
@@ -16,9 +16,10 @@ from experiments.fault_detection.overlapping_segment.methods.overlapping_segment
 )
 
 OUTPUT_DIR = Path(__file__).resolve().parent / "output"
+LENGTH_SPLIT_PATH = json_dir / "length_split.json"
 
-MAX_WORKERS = 5
-REQUESTS_PER_MINUTE = 60
+# Sent sequentially (not in parallel) - parallel dispatch costs more here.
+REQUESTS_PER_MINUTE = 120
 
 METRIC_COLUMNS = [
     "exact_match_ratio",
@@ -73,9 +74,15 @@ class RateLimiter:
             self.last_call = now
 
 
+def long_ids() -> set[int]:
+    manifest = json.loads(LENGTH_SPLIT_PATH.read_text(encoding="utf-8"))
+    return set(manifest["long_ids"])
+
+
 def dataset_file_paths() -> list[Path]:
+    ids = long_ids()
     return sorted(
-        (path for path in json_dir.glob("*.json") if path.stem.isdigit()),
+        (path for path in json_dir.glob("*.json") if path.stem.isdigit() and int(path.stem) in ids),
         key=lambda path: int(path.stem),
     )
 
@@ -125,8 +132,7 @@ def process_file(
 def run(
     segment_ratio: float,
     model_name: str = "gpt-4o-mini",
-    dataset_name: str = "mast",
-    max_workers: int = MAX_WORKERS,
+    dataset_name: str = "mast_long",
     requests_per_minute: int = REQUESTS_PER_MINUTE,
 ) -> Path:
     method_name = build_method_name(segment_ratio)
@@ -143,76 +149,66 @@ def run(
     skipped = len(file_paths) - len(pending)
 
     limiter = RateLimiter(requests_per_minute)
-    write_lock = threading.Lock()
 
     progress = tqdm(total=len(file_paths), desc=f"fault_detection:{method_name}", unit="file")
     progress.update(skipped)
 
     try:
-        with ThreadPoolExecutor(max_workers=max_workers) as executor:
-            futures = {
-                executor.submit(
-                    process_file, file_path, experiment_metadata, segment_ratio, limiter
-                ): file_path
-                for file_path in pending
-            }
+        for file_path in pending:
+            try:
+                performance_metrics, cost_metrics = process_file(
+                    file_path, experiment_metadata, segment_ratio, limiter
+                )
+            except Exception as exc:
+                progress.write(f"Failed {file_path.name}: {exc}")
 
-            for future in as_completed(futures):
-                file_path = futures[future]
-                try:
-                    performance_metrics, cost_metrics = future.result()
-                except Exception as exc:
-                    progress.write(f"Failed {file_path.name}: {exc}")
-
-                    error_message = (
-                        "exceed max token" if is_max_token_error(exc) else str(exc)
-                    )
-                    sample = Sample.model_validate_json(
-                        file_path.read_text(encoding="utf-8")
-                    )
-                    row = {
-                        "file_name": file_path.name,
-                        "model": model_name,
-                        "dataset": dataset_name,
-                        "segmentation": method_name,
-                        "gt_faults": "|".join(sample.faults),
-                        "pred_faults": "",
-                        "error": error_message,
-                    }
-                    with write_lock:
-                        df = upsert_row(df, row)
-                        df.to_csv(output_csv, index=False)
-
-                    progress.set_postfix({"file": file_path.name})
-                    progress.update(1)
-                    continue
-
+                error_message = (
+                    "exceed max token" if is_max_token_error(exc) else str(exc)
+                )
+                sample = Sample.model_validate_json(
+                    file_path.read_text(encoding="utf-8")
+                )
                 row = {
                     "file_name": file_path.name,
                     "model": model_name,
                     "dataset": dataset_name,
                     "segmentation": method_name,
-                    "gt_faults": "|".join(performance_metrics.gt_faults),
-                    "pred_faults": "|".join(performance_metrics.pred_faults),
-                    "error": "",
-                    **{
-                        col: getattr(performance_metrics, col)
-                        for col in METRIC_COLUMNS
-                        if hasattr(performance_metrics, col)
-                    },
-                    **{
-                        col: getattr(cost_metrics, col)
-                        for col in METRIC_COLUMNS
-                        if hasattr(cost_metrics, col)
-                    },
+                    "gt_faults": "|".join(sample.faults),
+                    "pred_faults": "",
+                    "error": error_message,
                 }
-
-                with write_lock:
-                    df = upsert_row(df, row)
-                    df.to_csv(output_csv, index=False)
+                df = upsert_row(df, row)
+                df.to_csv(output_csv, index=False)
 
                 progress.set_postfix({"file": file_path.name})
                 progress.update(1)
+                continue
+
+            row = {
+                "file_name": file_path.name,
+                "model": model_name,
+                "dataset": dataset_name,
+                "segmentation": method_name,
+                "gt_faults": "|".join(performance_metrics.gt_faults),
+                "pred_faults": "|".join(performance_metrics.pred_faults),
+                "error": "",
+                **{
+                    col: getattr(performance_metrics, col)
+                    for col in METRIC_COLUMNS
+                    if hasattr(performance_metrics, col)
+                },
+                **{
+                    col: getattr(cost_metrics, col)
+                    for col in METRIC_COLUMNS
+                    if hasattr(cost_metrics, col)
+                },
+            }
+
+            df = upsert_row(df, row)
+            df.to_csv(output_csv, index=False)
+
+            progress.set_postfix({"file": file_path.name})
+            progress.update(1)
     finally:
         progress.close()
 

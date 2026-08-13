@@ -10,7 +10,7 @@ from experiments.fault_detection.overlapping_segment.prompts.overlapping_segment
     prompt as prompt_overlapping_segment,
     parser as parser_overlapping_segment,
 )
-from experiments.models import get_model
+from experiments.chat_models import get_model
 
 if TYPE_CHECKING:
     from experiments.fault_detection.overlapping_segment.methods.overlapping_segment import (

@@ -8,9 +8,16 @@ MAST traces are unstructured logs: a sample carries the whole log as a single
 optional ``trajectory`` field is filled in later by
 ``data/error_categorization/build_agent_behaviors.py`` for experiments that
 need segmentation.
+
+``Sample`` mirrors every column of the raw HF row (``mas_name``, ``llm_name``,
+``benchmark_name``, ``trace_id``, ``trace.key``/``trace.index``/
+``trace.trajectory``, ``mast_annotation``) plus the derived ``faults`` list
+(codes where ``mast_annotation`` is truthy) kept for backward compatibility
+with existing consumers (``build_agent_behaviors.py``, ``mast_length.py``,
+finding notes). Nothing from the source row is dropped.
 """
 
-from typing import List
+from typing import Dict, List
 
 from pydantic import BaseModel
 
@@ -41,9 +48,16 @@ class AgentBehavior(BaseModel):
 
 class Sample(BaseModel):
     mas_name: str
+    llm_name: str
+    benchmark_name: str
+    trace_id: int
+    trace_key: str
+    trace_index: int
+
     raw_trajectory: str
     trajectory: List[AgentBehavior] | None = None
 
+    mast_annotation: Dict[str, int]
     faults: List[str]
 
 

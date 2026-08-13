@@ -27,7 +27,7 @@ def token_budget_from_ratio(level_ratio: float) -> int:
 
 
 def count_tokens(text: str, model_name: str) -> int:
-    from experiments.models import get_model
+    from experiments.chat_models import get_model
 
     model = get_model(model_name)
     return model.get_num_tokens(text)

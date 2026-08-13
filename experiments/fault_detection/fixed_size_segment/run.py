@@ -8,7 +8,7 @@ from pathlib import Path
 import pandas as pd
 from tqdm import tqdm
 
-from data.fault_detection.mast import Sample, MAST_METADATA, json_dir
+from data.error_categorization.mast import Sample, MAST_METADATA, json_dir
 from experiments.fault_detection.baseline.methods.all_at_once import ExperimentMetadata
 from experiments.fault_detection.fixed_size_segment.methods.fixed_size_segment import (
     SEGMENT_LEVELS,

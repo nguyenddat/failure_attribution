@@ -10,7 +10,7 @@ from experiments.fault_detection.baseline.prompts.all_at_once import (
     prompt as prompt_all_at_once,
     parser as parser_all_at_once,
 )
-from experiments.models import get_model
+from experiments.chat_models import get_model
 
 if TYPE_CHECKING:
     from experiments.fault_detection.baseline.methods.all_at_once import (
