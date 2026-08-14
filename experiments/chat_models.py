@@ -7,10 +7,9 @@ from dotenv import load_dotenv
 load_dotenv()
 openrouter_api_key = os.getenv("OPENROUTER_API_KEY", "")
 
-model_names = ["gpt-4o-mini", "deepseek-v4-flash"]
+model_names = ["gpt-4o-mini"]
 models = {
     "gpt-4o-mini": "openai/gpt-4o-mini",
-    "deepseek-v4-flash": "deepseek/deepseek-v4-flash-0731",
 }
 
 model_cache = {}
