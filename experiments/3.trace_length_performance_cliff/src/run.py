@@ -35,6 +35,7 @@ from experiments.single_fault.utils.schema import Metadata  # noqa: E402, RUF100
 
 logging.basicConfig(level=logging.INFO)
 logging.getLogger("httpx").setLevel(logging.WARNING)
+logging.getLogger("httpx2").setLevel(logging.WARNING)
 logging.getLogger("httpcore").setLevel(logging.WARNING)
 logger = logging.getLogger("experiment_3")
 
