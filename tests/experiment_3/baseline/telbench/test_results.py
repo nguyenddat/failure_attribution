@@ -46,7 +46,7 @@ def test_update_method_result_and_completeness(tmp_path: Path):
     assert has_complete_method_result(df, "0.json", "all_at_once") is True
     assert df.loc[0, "all_at_once_pred_span"] == "s001"
     assert df.loc[0, "all_at_once_fea"] == 1.0
-    assert df.loc[0, "all_at_once_exceeded_max_token_limit"] == False  # noqa: E712
+    assert df.loc[0, "all_at_once_exceeded_max_token_limit"] == False
 
 
 def test_sort_results_orders_by_numeric_file_stem(tmp_path: Path):

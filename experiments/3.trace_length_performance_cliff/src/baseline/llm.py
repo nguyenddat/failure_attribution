@@ -2,12 +2,11 @@ from __future__ import annotations
 
 import time
 
-from langchain_core.prompts import ChatPromptTemplate
 from langchain_classic.output_parsers.fix import OutputFixingParser
+from langchain_core.prompts import ChatPromptTemplate
 from pydantic import BaseModel
 
 from experiments.chat_models import get_model
-
 
 _CONTEXT_LENGTH_PHRASES = (
     "context_length_exceeded",
@@ -42,7 +41,7 @@ def invoke_structured(
 
     try:
         result = parser.invoke(ai_msg).model_dump()
-    except Exception:
+    except Exception:  # noqa: BLE001 - fall back to output-fixing on any parse failure
         fixing_parser = OutputFixingParser.from_llm(parser=parser, llm=model)
         result = fixing_parser.invoke(ai_msg).model_dump()
     return result, cost_metrics

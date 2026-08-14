@@ -47,7 +47,7 @@ def test_all_at_once_scores_correct_prediction():
         "baseline.trace_elephant.methods.invoke_structured",
         return_value=({"step_number": 1}, {"latency": 0.1, "input_tokens": 3, "output_tokens": 1}),
     ):
-        accuracy, cost = all_at_once_single_file(_sample_data(), model_name="gpt-4o-mini")
+        accuracy, _cost = all_at_once_single_file(_sample_data(), model_name="gpt-4o-mini")
 
     assert accuracy["pred_agent"] == "Worker"
     assert accuracy["pred_step"] == 1
@@ -60,7 +60,7 @@ def test_step_by_step_not_found_when_no_step_flagged():
         "baseline.trace_elephant.methods.invoke_structured",
         return_value=({"error_found": False}, {"latency": 0.1, "input_tokens": 1, "output_tokens": 1}),
     ):
-        accuracy, cost = step_by_step_single_file(_sample_data(), model_name="gpt-4o-mini")
+        accuracy, _cost = step_by_step_single_file(_sample_data(), model_name="gpt-4o-mini")
 
     assert accuracy["pred_agent"] == "Not Found"
     assert accuracy["pred_step"] == -1

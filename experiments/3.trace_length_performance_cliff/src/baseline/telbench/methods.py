@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+from baseline.llm import invoke_structured, is_context_length_exceeded
 from baseline.telbench.metrics import (
     compute_metrics,
     first_error_span,
@@ -12,7 +13,6 @@ from baseline.telbench.system_prompt import (
     step_by_step_parser,
     step_by_step_prompt,
 )
-from baseline.llm import invoke_structured, is_context_length_exceeded
 
 
 def format_spans(spans: list[dict]) -> str:

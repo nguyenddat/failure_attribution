@@ -5,7 +5,6 @@ from pathlib import Path
 from unittest.mock import patch
 
 import pandas as pd
-
 from baseline.telbench.run import run_telbench
 
 

@@ -2,6 +2,7 @@ from __future__ import annotations
 
 import json
 
+from baseline.llm import invoke_structured
 from baseline.trace_elephant.system_prompt import (
     AllAtOnceInput,
     StepByStepInput,
@@ -11,7 +12,6 @@ from baseline.trace_elephant.system_prompt import (
     step_by_step_prompt,
 )
 from experiments.single_fault.utils.accuracy import agent_names_match
-from baseline.llm import invoke_structured
 
 
 def format_trajectory(trajectory: list[dict]) -> str:

@@ -8,14 +8,22 @@ SRC_DIR = Path(__file__).resolve().parents[2]
 sys.path.insert(0, str(REPO_ROOT))
 sys.path.insert(0, str(SRC_DIR))
 
-from baseline.trace_elephant.methods import (  # noqa: E402
+from baseline.trace_elephant.methods import (
     all_at_once_single_file,
     step_by_step_single_file,
 )
-from experiments.single_fault.experiments.shared import MethodConfig, run_method_configs_for_dataset  # noqa: E402
-from experiments.single_fault.utils.experiment_paths import BASELINE_OUTPUT_DIR  # noqa: E402
-from experiments.single_fault.utils.schema import AccuracyMetrics, CostMetrics, Metadata  # noqa: E402
-
+from experiments.single_fault.experiments.shared import (
+    MethodConfig,
+    run_method_configs_for_dataset,
+)
+from experiments.single_fault.utils.experiment_paths import (
+    BASELINE_OUTPUT_DIR,
+)
+from experiments.single_fault.utils.schema import (
+    AccuracyMetrics,
+    CostMetrics,
+    Metadata,
+)
 
 DEFAULT_MODEL_NAME = "gpt-4o-mini"
 DATA_DIR = REPO_ROOT / "data" / "error_localization" / "single_fault" / "trace_elephant"

@@ -2,14 +2,13 @@ from __future__ import annotations
 
 from unittest.mock import patch
 
-from pydantic import BaseModel, Field
-from langchain_core.output_parsers import PydanticOutputParser
-from langchain_core.messages import AIMessage
-
 from baseline.llm import (
     invoke_structured,
     is_context_length_exceeded,
 )
+from langchain_core.messages import AIMessage
+from langchain_core.output_parsers import PydanticOutputParser
+from pydantic import BaseModel, Field
 
 
 class _EchoResponse(BaseModel):

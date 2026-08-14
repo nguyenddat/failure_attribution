@@ -78,7 +78,7 @@ def test_step_by_step_keeps_prior_state_when_exceeded_mid_scan():
         try:
             return next(call_results)
         except StopIteration:
-            raise Exception("This model's maximum context length is 128000 tokens")
+            raise RuntimeError("This model's maximum context length is 128000 tokens") from None
 
     with patch(
         "baseline.telbench.methods.invoke_structured",
@@ -89,7 +89,7 @@ def test_step_by_step_keeps_prior_state_when_exceeded_mid_scan():
         # second call to raise.
         data = _sample_data()
         data["gold"]["error_span_ids"] = ["s001"]
-        accuracy, cost = step_by_step_single_file(data, model_name="gpt-4o-mini")
+        accuracy, _cost = step_by_step_single_file(data, model_name="gpt-4o-mini")
 
     # error_found=True at span s001 -> loop returns immediately, second call
     # never happens, so no exceeded flag and pred_span is s001.
@@ -102,7 +102,7 @@ def test_step_by_step_not_found_when_no_span_flagged():
         "baseline.telbench.methods.invoke_structured",
         return_value=({"error_found": False}, {"latency": 0.1, "input_tokens": 1, "output_tokens": 1}),
     ):
-        accuracy, cost = step_by_step_single_file(_sample_data(), model_name="gpt-4o-mini")
+        accuracy, _cost = step_by_step_single_file(_sample_data(), model_name="gpt-4o-mini")
 
     assert accuracy["pred_span"] is None
     assert accuracy["metrics"]["fea"] == 0.0

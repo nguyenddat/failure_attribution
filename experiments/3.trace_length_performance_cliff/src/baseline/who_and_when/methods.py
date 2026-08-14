@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+from baseline.llm import invoke_structured
 from baseline.who_and_when.system_prompt import (
     AllAtOnceInput,
     StepByStepInput,
@@ -9,7 +10,6 @@ from baseline.who_and_when.system_prompt import (
     step_by_step_prompt,
 )
 from experiments.single_fault.utils.accuracy import agent_names_match
-from baseline.llm import invoke_structured
 
 
 def format_trajectory(trajectory: list[dict]) -> str:
@@ -58,7 +58,6 @@ def all_at_once_single_file(data: dict, model_name: str) -> tuple[dict, dict]:
 
 def step_by_step_single_file(data: dict, model_name: str) -> tuple[dict, dict]:
     trajectory = data["trajectory"]
-    all_chat_content = format_trajectory(trajectory)
     total_cost = {"latency": 0.0, "input_tokens": 0, "output_tokens": 0}
 
     for current_step, item in enumerate(trajectory):

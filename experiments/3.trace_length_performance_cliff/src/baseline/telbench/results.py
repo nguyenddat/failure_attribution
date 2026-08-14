@@ -4,7 +4,6 @@ from pathlib import Path
 
 import pandas as pd
 
-
 BASE_RESULT_COLUMNS = ["file", "gold_spans", "gt_first_error"]
 
 

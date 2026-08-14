@@ -10,23 +10,24 @@ SRC_DIR = Path(__file__).resolve().parents[2]
 sys.path.insert(0, str(REPO_ROOT))
 sys.path.insert(0, str(SRC_DIR))
 
-from baseline.telbench.methods import (  # noqa: E402
+from baseline.telbench.methods import (
     all_at_once_single_file,
     step_by_step_single_file,
 )
-from baseline.telbench.metrics import (  # noqa: E402
+from baseline.telbench.metrics import (
     first_error_span,
 )
-from baseline.telbench.results import (  # noqa: E402
+from baseline.telbench.results import (
     has_complete_method_result,
     load_or_init_results,
     sort_results,
     update_method_result,
     upsert_base_row,
 )
-from experiments.single_fault.utils.experiment_paths import BASELINE_OUTPUT_DIR  # noqa: E402
-from experiments.single_fault.utils.file import load_json  # noqa: E402
-
+from experiments.single_fault.utils.experiment_paths import (
+    BASELINE_OUTPUT_DIR,
+)
+from experiments.single_fault.utils.file import load_json
 
 TELBENCH_DATA_DIR = (
     REPO_ROOT / "data" / "error_localization" / "multi_fault" / "telbench"
