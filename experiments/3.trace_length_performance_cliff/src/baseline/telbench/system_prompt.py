@@ -46,6 +46,13 @@ Your task is to identify the id of the FIRST span in which the agent made
 an important mistake (an unsupported, contradicted, or prematurely
 committed claim) that could directly affect the final answer.
 
+Typical mistake types: constraint handling (missed/relaxed/misread
+constraints), search & retrieval (bad query, wrong candidate scope),
+evidence grounding (unverified or misused source, unsupported or
+overanchored claim), entity mapping (wrong entity or attribute),
+information processing (parsing, calculation, aggregation, formatting,
+or memory error), process control (goal drift, control-flow error).
+
 Important rules:
 - Return only the id of the first span containing an important mistake.
 - Do not mark normal exploration, failed searches, tentative hypotheses,
@@ -77,6 +84,13 @@ You will be provided with:
 Your task is to determine whether the current span contains an important
 mistake (an unsupported, contradicted, or prematurely committed claim) that
 could directly affect the final answer.
+
+Typical mistake types: constraint handling (missed/relaxed/misread
+constraints), search & retrieval (bad query, wrong candidate scope),
+evidence grounding (unverified or misused source, unsupported or
+overanchored claim), entity mapping (wrong entity or attribute),
+information processing (parsing, calculation, aggregation, formatting,
+or memory error), process control (goal drift, control-flow error).
 
 The research question is:
 {question}
