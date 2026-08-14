@@ -1,11 +1,10 @@
-from __future__ import annotations
+from __future__ import annotations  # noqa: EXE002
 
 import argparse
 import json
 import logging
 import sys
 from pathlib import Path
-from typing import Optional
 
 from tqdm import tqdm
 
@@ -13,15 +12,8 @@ REPO_ROOT = Path(__file__).resolve().parents[3]
 sys.path.insert(0, str(REPO_ROOT))
 sys.path.insert(0, str(Path(__file__).resolve().parent))
 
-from experiments.chat_models import model_names  # noqa: E402
-from experiments.single_fault.methods.baselines.all_at_once import (  # noqa: E402
-    all_at_once_single_file,
-)
-from experiments.single_fault.utils.file import format_agent_behaviors, load_json  # noqa: E402
-from experiments.single_fault.utils.schema import Metadata  # noqa: E402
-
-from datasets import DATASET_DIRS, NORMALIZERS  # noqa: E402
-from export_excel import (  # noqa: E402
+from datasets import DATASET_DIRS, NORMALIZERS
+from export_excel import (
     ACCURACY_COLUMNS,
     COST_COLUMNS,
     is_row_done,
@@ -29,9 +21,21 @@ from export_excel import (  # noqa: E402
     save,
     upsert_row,
 )
-from token_check import count_tokens, exceeds_threshold  # noqa: E402
+from token_check import count_tokens, exceeds_threshold
+
+from experiments.chat_models import model_names
+from experiments.single_fault.methods.baselines.all_at_once import (
+    all_at_once_single_file,
+)
+from experiments.single_fault.utils.file import (  # noqa: E402, RUF100
+    format_agent_behaviors,
+    load_json,
+)
+from experiments.single_fault.utils.schema import Metadata  # noqa: E402, RUF100
 
 logging.basicConfig(level=logging.INFO)
+logging.getLogger("httpx").setLevel(logging.WARNING)
+logging.getLogger("httpcore").setLevel(logging.WARNING)
 logger = logging.getLogger("experiment_3")
 
 RESULTS_DIR = Path(__file__).resolve().parent.parent / "results" / "tables"
@@ -42,14 +46,14 @@ SRC_DIR = Path(__file__).resolve().parent
 TELBENCH_SUBSAMPLE_PATH = SRC_DIR / "telbench_subsample.json"
 
 
-def _load_telbench_subsample() -> Optional[set[str]]:
+def _load_telbench_subsample() -> set[str] | None:
     if not TELBENCH_SUBSAMPLE_PATH.exists():
         return None
     return set(json.loads(TELBENCH_SUBSAMPLE_PATH.read_text(encoding="utf-8")))
 
 
 def iter_dataset_files(
-    dataset_key: str, dataset_dir: Path, limit: Optional[int]
+    dataset_key: str, dataset_dir: Path, limit: int | None
 ) -> list[Path]:
     files = sorted(dataset_dir.glob("*.json"), key=lambda p: int(p.stem))
     if dataset_key == "telbench":
@@ -67,7 +71,7 @@ def is_fully_done(accuracy_df, cost_df, model_key: str, dataset_key: str, file_n
 
 def process_file(
     model_key: str, dataset_key: str, file_path: Path
-) -> Optional[tuple[dict, dict]]:
+) -> tuple[dict, dict] | None:
     raw = load_json(file_path)
     normalized = NORMALIZERS[dataset_key](raw)
     if normalized is None:
