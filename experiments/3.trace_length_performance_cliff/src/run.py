@@ -27,11 +27,16 @@ from experiments.chat_models import model_names
 from experiments.single_fault.methods.baselines.all_at_once import (
     all_at_once_single_file,
 )
+from experiments.single_fault.methods.baselines.step_by_step import (
+    step_by_step_single_file,
+)
 from experiments.single_fault.utils.file import (  # noqa: E402, RUF100
     format_agent_behaviors,
     load_json,
 )
 from experiments.single_fault.utils.schema import Metadata  # noqa: E402, RUF100
+
+METHOD_NAMES = ["all_at_once", "step_by_step"]
 
 logging.basicConfig(level=logging.INFO)
 logging.getLogger("httpx").setLevel(logging.WARNING)
@@ -64,14 +69,16 @@ def iter_dataset_files(
     return files[:limit] if limit else files
 
 
-def is_fully_done(accuracy_df, cost_df, model_key: str, dataset_key: str, file_name: str) -> bool:
-    return is_row_done(accuracy_df, model_key, dataset_key, file_name) and is_row_done(
-        cost_df, model_key, dataset_key, file_name
-    )
+def is_fully_done(
+    accuracy_df, cost_df, model_key: str, dataset_key: str, method_key: str, file_name: str
+) -> bool:
+    return is_row_done(
+        accuracy_df, model_key, dataset_key, method_key, file_name
+    ) and is_row_done(cost_df, model_key, dataset_key, method_key, file_name)
 
 
 def process_file(
-    model_key: str, dataset_key: str, file_path: Path
+    model_key: str, dataset_key: str, method_key: str, file_path: Path
 ) -> tuple[dict, dict] | None:
     raw = load_json(file_path)
     normalized = NORMALIZERS[dataset_key](raw)
@@ -93,6 +100,7 @@ def process_file(
     base = {
         "model": model_key,
         "dataset": dataset_key,
+        "method": method_key,
         "file": file_path.name,
         "gt_agent": normalized["mistake_agent"],
         "gt_step": normalized["mistake_step"],
@@ -125,8 +133,16 @@ def process_file(
         }
         return accuracy_row, cost_row
 
-    metadata = Metadata(model_name=model_key, method="all_at_once")
-    accuracy_metrics, cost_metrics = all_at_once_single_file(normalized, metadata)
+    metadata = Metadata(model_name=model_key, method=method_key)
+    if method_key == "all_at_once":
+        accuracy_metrics, cost_metrics = all_at_once_single_file(normalized, metadata)
+    else:
+        accuracy_metrics, cost_metrics = step_by_step_single_file(
+            data=normalized,
+            current_step=0,
+            total_steps=num_steps,
+            metadata=metadata,
+        )
 
     accuracy_row = {
         **base,
@@ -153,24 +169,31 @@ def main() -> None:
 
     accuracy_df = load_or_init(ACCURACY_PATH, ACCURACY_COLUMNS)
     cost_df = load_or_init(COST_PATH, COST_COLUMNS)
+    if "method" not in accuracy_df.columns:
+        accuracy_df["method"] = "all_at_once"
+    if "method" not in cost_df.columns:
+        cost_df["method"] = "all_at_once"
 
     for model_key in model_names:
         for dataset_key, dataset_dir in DATASET_DIRS.items():
             files = iter_dataset_files(dataset_key, dataset_dir, args.limit)
-            progress = tqdm(files, desc=f"{model_key}/{dataset_key}")
-            for file_path in progress:
-                if is_fully_done(accuracy_df, cost_df, model_key, dataset_key, file_path.name):
-                    continue
+            for method_key in METHOD_NAMES:
+                progress = tqdm(files, desc=f"{model_key}/{dataset_key}/{method_key}")
+                for file_path in progress:
+                    if is_fully_done(
+                        accuracy_df, cost_df, model_key, dataset_key, method_key, file_path.name
+                    ):
+                        continue
 
-                result = process_file(model_key, dataset_key, file_path)
-                if result is None:
-                    continue
-                accuracy_row, cost_row = result
+                    result = process_file(model_key, dataset_key, method_key, file_path)
+                    if result is None:
+                        continue
+                    accuracy_row, cost_row = result
 
-                accuracy_df = upsert_row(accuracy_df, accuracy_row)
-                cost_df = upsert_row(cost_df, cost_row)
-                save(accuracy_df, ACCURACY_PATH)
-                save(cost_df, COST_PATH)
+                    accuracy_df = upsert_row(accuracy_df, accuracy_row)
+                    cost_df = upsert_row(cost_df, cost_row)
+                    save(accuracy_df, ACCURACY_PATH)
+                    save(cost_df, COST_PATH)
 
 
 if __name__ == "__main__":

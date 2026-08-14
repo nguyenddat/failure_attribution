@@ -7,6 +7,7 @@ import pandas as pd
 ACCURACY_COLUMNS = [
     "model",
     "dataset",
+    "method",
     "file",
     "gt_agent",
     "gt_step",
@@ -22,6 +23,7 @@ ACCURACY_COLUMNS = [
 COST_COLUMNS = [
     "model",
     "dataset",
+    "method",
     "file",
     "latency",
     "input_tokens",
@@ -38,14 +40,19 @@ def load_or_init(path: Path, columns: list[str]) -> pd.DataFrame:
     return pd.DataFrame(columns=columns)
 
 
-def _row_mask(df: pd.DataFrame, model: str, dataset: str, file: str) -> pd.Series:
-    return (df["model"] == model) & (df["dataset"] == dataset) & (df["file"] == file)
+def _row_mask(df: pd.DataFrame, model: str, dataset: str, method: str, file: str) -> pd.Series:
+    return (
+        (df["model"] == model)
+        & (df["dataset"] == dataset)
+        & (df["method"] == method)
+        & (df["file"] == file)
+    )
 
 
-def is_row_done(df: pd.DataFrame, model: str, dataset: str, file: str) -> bool:
+def is_row_done(df: pd.DataFrame, model: str, dataset: str, method: str, file: str) -> bool:
     if df.empty:
         return False
-    match = df[_row_mask(df, model, dataset, file)]
+    match = df[_row_mask(df, model, dataset, method, file)]
     if match.empty:
         return False
     return bool(match["status"].notna().iloc[0])
@@ -53,7 +60,7 @@ def is_row_done(df: pd.DataFrame, model: str, dataset: str, file: str) -> bool:
 
 def upsert_row(df: pd.DataFrame, row: dict) -> pd.DataFrame:
     if not df.empty:
-        mask = _row_mask(df, row["model"], row["dataset"], row["file"])
+        mask = _row_mask(df, row["model"], row["dataset"], row["method"], row["file"])
         if mask.any():
             for key, value in row.items():
                 df.loc[mask, key] = value
