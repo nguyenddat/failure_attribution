@@ -58,7 +58,6 @@ def all_at_once_single_file(data: dict, model_name: str) -> tuple[dict, dict]:
 
 def step_by_step_single_file(data: dict, model_name: str) -> tuple[dict, dict]:
     trajectory = data["trajectory"]
-    all_chat_content = format_trajectory(trajectory)
     total_cost = {"latency": 0.0, "input_tokens": 0, "output_tokens": 0}
 
     for current_step, item in enumerate(trajectory):

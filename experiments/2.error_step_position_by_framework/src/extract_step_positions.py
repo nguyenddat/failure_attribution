@@ -170,7 +170,6 @@ EXTRACTORS = [from_trace_elephant, from_who_and_when, from_agent_error_bench, fr
 def main() -> None:
     rows = []
     for extractor in EXTRACTORS:
-        json_dir_check = extractor.__doc__  # not used, just documents source
         rows.extend(list(extractor()))
 
     df = pd.DataFrame(rows)

@@ -195,7 +195,7 @@ def draw_floating_panel(
             bar_colors.append(REGRESS_COLOR)
             edge_widths.append(0.8)
 
-    bars = ax.bar(
+    ax.bar(
         x, heights, bottom=bottoms, width=0.55, color=bar_colors, alpha=0.85,
         edgecolor=[c for c in bar_colors], linewidth=edge_widths, zorder=3,
     )
