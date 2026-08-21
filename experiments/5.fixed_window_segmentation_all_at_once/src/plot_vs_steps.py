@@ -38,7 +38,7 @@ WINDOW_METHODS = {
 }
 MAX_STEPS = 60
 BIN_WIDTH = 3
-MIN_STEPS_LONG = 22
+MIN_STEPS_LONG = 30
 
 
 def _plot(baselines: pd.DataFrame, windows: pd.DataFrame, title: str, out_name: str, bin_width: int = 1) -> None:

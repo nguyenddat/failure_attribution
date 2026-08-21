@@ -40,10 +40,29 @@ theo lựa chọn người dùng, bỏ `telbench` (agent_accuracy vô nghĩa, qu
 và bỏ qua path chết `ww_algorithm_generated` (đã đổi thành
 `agent_error_bench`, schema khác, ngoài phạm vi).
 
+## Kết quả who_and_when__hand-crafted (58 file, đủ 12 config)
+
+Vẽ bằng `src/plot_who_and_when.py` (cùng dạng 2-panel short/long với
+experiment 5) → `results/figures/who_and_when_overall_accuracy_by_length.png`.
+Chỉ so `step_accuracy`, ngưỡng chia `num_steps = 22`.
+
+- **Trace ngắn (<= 22 steps, n=19)**: không config nào vượt all_at_once
+  (0.316). Tốt nhất `w5_prev_only` = 0.263.
+- **Trace dài (> 22 steps, n=39)**: baseline sụp (all_at_once 0.077,
+  step_by_step 0.128) và **`w11_prev_only` = 0.184** vượt cả hai — config
+  duy nhất thắng. Đây là hướng đáng đào tiếp: fixed window chỉ có giá trị
+  ở vùng trace dài, đúng với giả thuyết của experiment 3.
+- `next_only` hỏng hoàn toàn ở step-level: **0.000 trên cả 232 lượt**
+  (4 window size × 58 file). Đã kiểm tra không phải lỗi off-by-one
+  (`step` trong dataset là 0-based, khớp index của `enumerate`) —
+  `pred_step - gt_step` phân tán rộng và không bao giờ bằng 0. Cần soi
+  lại `next_only_prompt` trước khi kết luận.
+
 ## Chưa làm
 
-- Chưa chạy full 278 file × 12 method-config (~3336 lượt file×method, mỗi
-  lượt trung bình chạy nhiều LLM call/step tới khi early-stop). Lệnh chạy:
-  `python experiments/4.fixed_window_segmentation/src/run.py`
-- Chưa có script vẽ biểu đồ `step_accuracy`/`agent_accuracy` theo
-  `window_size` × `context_mode` × `dataset`.
+- `trace_elephant` mới xong 6.3/12 config (1860/3324 row toàn thí nghiệm).
+  Job pm2 `exp4-fixed-window` chết lúc 03:01 16-08-2026 do DNS fail tạm
+  thời (`httpx2.ConnectError: Temporary failure in name resolution` →
+  `openai.APIConnectionError`) — `llm.py` không retry, `run.py` không bọc
+  try/except quanh `process_file`, `autorestart: false`. Chạy tiếp:
+  `pm2 restart exp4-fixed-window` (đã có `is_row_done` skip row cũ).
